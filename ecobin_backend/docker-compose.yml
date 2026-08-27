@@ -1,4 +1,19 @@
 services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ecobin_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "123"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecobin_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -16,14 +31,16 @@ services:
       - .env
     environment:
       DB_ENGINE: django.db.backends.postgresql
-      DB_HOST: ${DB_HOST:-db}
-      DB_PORT: ${DB_PORT:-5432}
+      DB_HOST: db
+      DB_PORT: 5432
       REDIS_URL: redis://redis:6379/0
       ALLOWED_HOSTS: "*"
       DEBUG: "False"
     ports:
       - "8000:8000"
     depends_on:
+      db:
+        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -35,8 +52,8 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./letsencrypt:/etc/letsencrypt:ro
-      - ./certbot-www:/var/www/certbot:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
     depends_on:
       - web
 
@@ -48,11 +65,13 @@ services:
       - .env
     environment:
       DB_ENGINE: django.db.backends.postgresql
-      DB_HOST: ${DB_HOST:-db}
-      DB_PORT: ${DB_PORT:-5432}
+      DB_HOST: db
+      DB_PORT: 5432
       REDIS_URL: redis://redis:6379/0
       ALLOWED_HOSTS: "*"
     depends_on:
+      db:
+        condition: service_healthy
       redis:
         condition: service_healthy
 

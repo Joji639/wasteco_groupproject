@@ -1,0 +1,11 @@
+zxing_cpp-3.1.1.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+zxing_cpp-3.1.1.dist-info/METADATA,sha256=HyZC-DWiDHA3blQLNIWRglNjvkaa6EWKWrad-rTBPXo,2322
+zxing_cpp-3.1.1.dist-info/RECORD,,
+zxing_cpp-3.1.1.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+zxing_cpp-3.1.1.dist-info/WHEEL,sha256=Y1h6DI9fUdCH2EQ9zbxX8rDpVTvE5dLV5-Npqf3yG0U,104
+zxing_cpp-3.1.1.dist-info/licenses/LICENSE,sha256=LlTNhKZFvqJZQ8dd2K5nyykeZqR6EVeDM8m0s7a4bIU,11560
+zxingcpp/__init__.py,sha256=HBB4r-6Pk427uBJRdI1J4rSmWC6S6yIQO1ik3q0BSN4,193
+zxingcpp/__pycache__/__init__.cpython-312.pyc,,
+zxingcpp/py.typed,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+zxingcpp/zxingcpp.pyd,sha256=YVOOjfGu-isEzpMHubTSfTx8aLfy6zrFW0b5RDXAzjA,1823232
+zxingcpp/zxingcpp.pyi,sha256=bb5qcZ9G1UyFc49jGAZ97zGDPWcezxSNAoYJTnO3_YE,20857
