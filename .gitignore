@@ -6,9 +6,9 @@ __pycache__/
 .eggs/
 build/
 dist/
+env/
 .venv/
 venv/
-env/*
 
 # Django
 *.log

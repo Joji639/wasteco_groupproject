@@ -1,4 +1,13 @@
 from django.contrib.auth.base_user import BaseUserManager
+from django.contrib.auth.models import Group
+
+
+ROLE_TO_GROUP = {
+    'user': 'User',
+    'operator': 'Operator',
+    'operatoradmin': 'OperatorAdmin',
+    'superadmin': 'SuperAdmin',
+}
 
 
 class UserManager(BaseUserManager):
@@ -11,6 +20,16 @@ class UserManager(BaseUserManager):
         user = self.model(email=email, phone=phone, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
+
+        base_role = extra_fields.get('base_role', getattr(user, 'base_role', 'user'))
+        group_name = ROLE_TO_GROUP.get(base_role)
+        if group_name:
+            try:
+                group = Group.objects.get(name=group_name)
+                user.groups.add(group)
+            except Group.DoesNotExist:
+                pass
+
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):

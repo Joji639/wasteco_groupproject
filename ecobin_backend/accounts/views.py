@@ -267,6 +267,15 @@ class PersonalInfoView(APIView):
 
     @extend_schema(request=PersonalInfoSerializer, responses={200: None})
     def patch(self, request):
+        try:
+            profile = request.user.user_profile
+        except UserProfile.DoesNotExist:
+            return Response(
+                {"success": False, "message": "User profile not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = PersonalInfoSerializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
         try:
@@ -462,6 +471,11 @@ class LoginWith2FAView(APIView):
                 {"success": False, "message": "Invalid credentials"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
+        except Exception:
+            return Response(
+                {"success": False, "message": "An error occurred"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
         if not user.is_2fa_enabled or not user.totp_secret:
             return Response(
@@ -511,7 +525,10 @@ class ForgotPasswordRequestView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        send_email_otp_task.delay(email, code)
+        try:
+            send_email_otp_task.delay(email, code)
+        except Exception:
+            pass
 
         return Response(
             {"success": True, "message": "If this account exists, an OTP has been sent"},
