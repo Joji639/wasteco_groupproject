@@ -213,4 +213,11 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
+    'TAGS': [
+        {'name': 'Public', 'description': 'Public endpoints — no authentication required'},
+        {'name': 'User', 'description': 'Authenticated user endpoints — requires User role'},
+        {'name': 'Staff', 'description': 'Staff endpoints — requires Operator or OperatorAdmin role'},
+        {'name': 'Operator Admin', 'description': 'Admin panel endpoints — requires OperatorAdmin or SuperAdmin role'},
+        {'name': 'Super Admin', 'description': 'Super admin endpoints — requires SuperAdmin role only'},
+    ],
 }
