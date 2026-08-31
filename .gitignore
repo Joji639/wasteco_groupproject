@@ -35,3 +35,11 @@ staticfiles/
 # Celery
 celerybeat-schedule
 celerybeat.pid
+
+# Docker / ECS
+*.log
+
+# Test / temp files
+*.sh
+!ecobin_backend/docker-entrypoint.sh
+*.zip

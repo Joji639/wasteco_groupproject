@@ -24,11 +24,8 @@ class UserManager(BaseUserManager):
         base_role = extra_fields.get('base_role', getattr(user, 'base_role', 'user'))
         group_name = ROLE_TO_GROUP.get(base_role)
         if group_name:
-            try:
-                group = Group.objects.get(name=group_name)
-                user.groups.add(group)
-            except Group.DoesNotExist:
-                pass
+            group, _ = Group.objects.get_or_create(name=group_name)
+            user.groups.add(group)
 
         return user
 

@@ -526,7 +526,7 @@ class ForgotPasswordRequestView(APIView):
             )
 
         try:
-            send_email_otp_task.delay(email, code)
+            send_email_otp_task(email, code)
         except Exception:
             pass
 
@@ -779,8 +779,8 @@ class OperatorOnboardingView(APIView):
             onboarding = request.user.operator_onboarding
         except OperatorOnboarding.DoesNotExist:
             return Response(
-                {"success": False, "message": "No onboarding submitted yet"},
-                status=status.HTTP_404_NOT_FOUND
+                {"success": True, "data": None, "message": "No onboarding submitted yet"},
+                status=status.HTTP_200_OK
             )
 
         serializer = OperatorOnboardingSerializer(onboarding)

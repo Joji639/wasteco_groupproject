@@ -1,18 +1,22 @@
-from celery import shared_task
-from django.core.mail import send_mail
-from django.conf import settings
+import json
+import boto3
+import logging
+
+logger = logging.getLogger(__name__)
+
+lambda_client = boto3.client('lambda', region_name='ap-south-1')
 
 
-@shared_task(bind=True, max_retries=3)
-def send_email_otp_task(self, email, otp_code):
+def send_email_otp_task(email, otp_code):
     try:
-        send_mail(
-            subject="EcoBin - Your Password Reset OTP",
-            message=f"Your OTP for password reset is {otp_code}. It is valid for 5 minutes.",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,
+        payload = json.dumps({'email': email, 'otp_code': otp_code})
+        response = lambda_client.invoke(
+            FunctionName='ecobin-send-otp',
+            InvocationType='Event',
+            Payload=payload,
         )
-        return f"Email OTP sent to {email}"
-    except Exception as exc:
-        raise self.retry(exc=exc, countdown=10)
+        logger.info(f"Lambda invoked for {email}, status: {response['StatusCode']}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to invoke Lambda for {email}: {e}")
+        return False
