@@ -1,22 +1,29 @@
-import json
-import boto3
 import logging
+from django.core.mail import send_mail
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-lambda_client = boto3.client('lambda', region_name='ap-south-1')
-
 
 def send_email_otp_task(email, otp_code):
+    subject = 'EcoBin - Your Password Reset OTP'
+    message = (
+        f'Hello,\n\n'
+        f'Your OTP for password reset is: {otp_code}\n\n'
+        f'This code is valid for 5 minutes.\n'
+        f'If you did not request a password reset, please ignore this email.\n\n'
+        f'Regards,\nEcoBin Team'
+    )
     try:
-        payload = json.dumps({'email': email, 'otp_code': otp_code})
-        response = lambda_client.invoke(
-            FunctionName='ecobin-send-otp',
-            InvocationType='Event',
-            Payload=payload,
+        send_mail(
+            subject,
+            message,
+            settings.EMAIL_HOST_USER,
+            [email],
+            fail_silently=False,
         )
-        logger.info(f"Lambda invoked for {email}, status: {response['StatusCode']}")
+        logger.info(f"OTP email sent to {email}")
         return True
     except Exception as e:
-        logger.error(f"Failed to invoke Lambda for {email}: {e}")
+        logger.error(f"Failed to send OTP email to {email}: {e}")
         return False
