@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY . /app/
 
+RUN chmod +x /app/entrypoint_web.sh /app/entrypoint_worker.sh
+
 EXPOSE 8000
 
-ENTRYPOINT ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput 2>/dev/null; exec gunicorn ecobin_backend.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"]
+CMD ["sh", "/app/entrypoint_web.sh"]

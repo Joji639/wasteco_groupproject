@@ -1,11 +1,13 @@
 import logging
+from celery import shared_task
 from django.core.mail import send_mail
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
-def send_email_otp_task(email, otp_code):
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_email_otp_task(self, email, otp_code):
     subject = 'EcoBin - Your Password Reset OTP'
     message = (
         f'Hello,\n\n'
@@ -26,4 +28,4 @@ def send_email_otp_task(email, otp_code):
         return True
     except Exception as e:
         logger.error(f"Failed to send OTP email to {email}: {e}")
-        return False
+        raise self.retry(exc=e)

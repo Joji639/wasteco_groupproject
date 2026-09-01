@@ -525,10 +525,7 @@ class ForgotPasswordRequestView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        try:
-            send_email_otp_task(email, code)
-        except Exception:
-            pass
+        send_email_otp_task.delay(email, code)
 
         return Response(
             {"success": True, "message": "If this account exists, an OTP has been sent"},
