@@ -1,11 +1,15 @@
-"""Test settings — uses SQLite + locmem cache for local test runs."""
+"""Test settings — uses local PostgreSQL + locmem cache for test runs."""
 
 from .settings import *  # noqa: F401,F403
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": ":memory:",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "ecobin_test_db",
+        "USER": "postgres",
+        "PASSWORD": "123",
+        "HOST": "localhost",
+        "PORT": "5432",
     }
 }
 
