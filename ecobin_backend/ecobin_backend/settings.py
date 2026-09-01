@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'drf_spectacular',
     'accounts',
+    'ecobinusers',
 ]
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
