@@ -220,5 +220,11 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Staff', 'description': 'Staff endpoints — requires Operator or OperatorAdmin role'},
         {'name': 'Operator Admin', 'description': 'Admin panel endpoints — requires OperatorAdmin or SuperAdmin role'},
         {'name': 'Super Admin', 'description': 'Super admin endpoints — requires SuperAdmin role only'},
+        {'name': 'User - Waste Pickup', 'description': 'User waste pickup request endpoints'},
+        {'name': 'User - Pickup Date', 'description': 'User pickup date schedule endpoints'},
+        {'name': 'User - Reviews', 'description': 'User review endpoints'},
+        {'name': 'User - Payments', 'description': 'User payment history endpoints'},
+        {'name': 'User - Collections', 'description': 'User waste collection history endpoints'},
+        {'name': 'User - Complaints', 'description': 'User complaint endpoints'},
     ],
 }

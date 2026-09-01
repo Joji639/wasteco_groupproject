@@ -7,15 +7,24 @@ from .models import (
 
 class WastePickupRequestSerializer(serializers.ModelSerializer):
     user_email = serializers.CharField(source='user.email', read_only=True)
+    assigned_operator_email = serializers.CharField(source='assigned_operator.email', read_only=True, default=None)
+    assigned_by_email = serializers.CharField(source='assigned_by.email', read_only=True, default=None)
 
     class Meta:
         model = WastePickupRequest
         fields = [
             'id', 'user', 'user_email', 'complaint_type', 'image',
-            'description', 'location', 'status', 'assigned_operator',
+            'description', 'location', 'status',
+            'assigned_operator', 'assigned_operator_email',
+            'assigned_by', 'assigned_by_email',
             'created_at', 'updated_at',
         ]
-        read_only_fields = ['id', 'user', 'status', 'assigned_operator', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id', 'user', 'status',
+            'assigned_operator', 'assigned_operator_email',
+            'assigned_by', 'assigned_by_email',
+            'created_at', 'updated_at',
+        ]
 
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
