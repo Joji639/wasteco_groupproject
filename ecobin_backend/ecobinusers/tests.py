@@ -3,6 +3,7 @@
 from datetime import date, time, timedelta
 from decimal import Decimal
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework import status
 from accounts.models import CustomUser, UserProfile
@@ -119,6 +120,7 @@ class PickupDateTests(TestCase):
         self.url = API + "pickup-date/"
         self.user = _create_user(email="pd@test.com", phone="+919000000103")
         UserProfile.objects.get_or_create(user=self.user, is_verified=True)
+        PickupSchedule.objects.filter(user=self.user).delete()
         _auth(self.client, self.user)
 
     def test_no_schedule_returns_default(self):
@@ -127,14 +129,16 @@ class PickupDateTests(TestCase):
         self.assertIn("next_pickup_date", r.data["data"])
 
     def test_future_schedule(self):
-        future_date = date.today() + timedelta(days=10)
+        today = timezone.now().date()
+        future_date = today + timedelta(days=10)
         PickupSchedule.objects.create(user=self.user, scheduled_date=future_date)
         r = self.client.get(self.url)
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertEqual(r.data["data"]["next_pickup_date"], str(future_date))
 
     def test_past_schedule_switches_to_next(self):
-        past_date = date.today() - timedelta(days=1)
+        today = timezone.now().date()
+        past_date = today - timedelta(days=1)
         PickupSchedule.objects.create(user=self.user, scheduled_date=past_date)
         r = self.client.get(self.url)
         self.assertEqual(r.status_code, status.HTTP_200_OK)

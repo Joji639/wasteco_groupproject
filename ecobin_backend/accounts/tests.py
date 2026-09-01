@@ -146,7 +146,7 @@ class UserLoginTests(TestCase):
         }, format="json")
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
-    @patch("accounts.views.send_email_otp_task")
+    @patch("accounts.views.public_auth.send_email_otp_task")
     def test_login_2fa_required(self, mock_task):
         self.user.is_2fa_enabled = True
         self.user.totp_secret = pyotp.random_base32()
@@ -348,7 +348,7 @@ class TwoFactorAuthTests(TestCase):
         self.user = _create_user(email="2fa@test.com", password="TwoFA1234!")
         _auth(self.client, self.user)
 
-    @patch("accounts.views.send_email_otp_task")
+    @patch("accounts.views.public_auth.send_email_otp_task")
     def test_setup_2fa(self, mock_task):
         r = self.client.post(API + "2fasetup/", format="json")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
@@ -453,13 +453,13 @@ class ForgotResetPasswordTests(TestCase):
         self.client = APIClient()
         self.user = _create_user(email="fp@test.com", password="FP1234!")
 
-    @patch("accounts.views.send_email_otp_task")
+    @patch("accounts.views.public_auth.send_email_otp_task")
     def test_forgot_password_existing_email(self, mock_task):
         r = self.client.post(API + "forgotpassword/",
                              {"email": "fp@test.com"}, format="json")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
-    @patch("accounts.views.send_email_otp_task")
+    @patch("accounts.views.public_auth.send_email_otp_task")
     def test_forgot_password_nonexistent_email(self, mock_task):
         r = self.client.post(API + "forgotpassword/",
                              {"email": "noone@test.com"}, format="json")
@@ -606,7 +606,7 @@ class StaffLoginTests(TestCase):
         }, format="json")
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
-    @patch("accounts.views.send_email_otp_task")
+    @patch("accounts.views.public_auth.send_email_otp_task")
     def test_login_staff_2fa_required(self, mock_task):
         self.operator.is_2fa_enabled = True
         self.operator.totp_secret = pyotp.random_base32()
@@ -959,7 +959,7 @@ class AdminLoginTests(TestCase):
         }, format="json")
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
-    @patch("accounts.views.send_email_otp_task")
+    @patch("accounts.views.public_auth.send_email_otp_task")
     def test_admin_login_2fa_required(self, mock_task):
         self.sa.is_2fa_enabled = True
         self.sa.totp_secret = pyotp.random_base32()
