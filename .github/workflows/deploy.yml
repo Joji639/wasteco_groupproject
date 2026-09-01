@@ -1,0 +1,69 @@
+name: Deploy to ECS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ecobin-backend
+          IMAGE_TAG: ${{ github.sha }}
+        working-directory: ecobin_backend
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -f Dockerfile.ecs .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition ecobin-web \
+            --query 'taskDefinition' --output json > task-definition.json
+
+      - name: Render new task definition
+        id: render
+        run: |
+          IMAGE="${{ steps.build-push.outputs.image }}"
+          # Replace the image URI in the task definition
+          cat task-definition.json | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          for container in data['containerDefinitions']:
+              if container['name'] == 'web':
+                  container['image'] = '$IMAGE'
+          # Remove incompatible fields for register-task-definition
+          data.pop('taskDefinitionArn', None)
+          data.pop('revision', None)
+          data.pop('status', None)
+          data.pop('requiresAttributes', None)
+          data.pop('compatibilities', None)
+          data.pop('registeredAt', None)
+          data.pop('registeredBy', None)
+          json.dump(data, sys.stdout, indent=2)
+          " > new-task-definition.json
+
+      - name: Deploy to Amazon ECS
+        run: |
+          aws ecs register-task-definition --cli-input-json file://new-task-definition.json
+          REVISION=$(aws ecs describe-task-definition --task-definition ecobin-web --query 'taskDefinition.revision' --output text)
+          aws ecs update-service --cluster ecobin-cluster --service ecobin-web-service --task-definition ecobin-web:$REVISION --force-new-deployment

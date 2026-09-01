@@ -18,25 +18,6 @@
         }
       ],
       "environment": [
-        {"name": "SECRET_KEY", "value": "django-insecure-jwq#6r8o)4#nis_1(oa2w0ehe-5b7bfy^0j5o--71o*bkyc%p$"},
-        {"name": "DEBUG", "value": "False"},
-        {"name": "ALLOWED_HOSTS", "value": "*"},
-        {"name": "DB_ENGINE", "value": "django.db.backends.postgresql"},
-        {"name": "DB_NAME", "value": "ecobin_db"},
-        {"name": "DB_USER", "value": "ecobinadmin"},
-        {"name": "DB_PASSWORD", "value": "EcoBin2024!RDS"},
-        {"name": "DB_HOST", "value": "ecobin-db.cnwsemyi6s04.ap-south-1.rds.amazonaws.com"},
-        {"name": "DB_PORT", "value": "5432"},
-        {"name": "REDIS_URL", "value": "redis://localhost:6379/0"},
-        {"name": "CLOUDINARY_CLOUD_NAME", "value": "dplvtqpf5"},
-        {"name": "CLOUDINARY_API_KEY", "value": "863441923983777"},
-        {"name": "CLOUDINARY_API_SECRET", "value": "RJdXwIzX1KkkfV7kdL5lkRqcMOw"},
-        {"name": "EMAIL_HOST", "value": "smtp.gmail.com"},
-        {"name": "EMAIL_PORT", "value": "587"},
-        {"name": "EMAIL_USE_TLS", "value": "True"},
-        {"name": "EMAIL_HOST_USER", "value": "crudproject77@gmail.com"},
-        {"name": "EMAIL_HOST_PASSWORD", "value": "wshp uehr yznu hgyz"},
-
         {"name": "AWS_DEFAULT_REGION", "value": "ap-south-1"}
       ],
       "logConfiguration": {
