@@ -67,10 +67,14 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout code
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
+
+      - name: Fetch all branches
+        run: git fetch origin
 
       - name: Merge developer into main
         run: |
