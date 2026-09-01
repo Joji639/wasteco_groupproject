@@ -10,16 +10,31 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:14
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: 123
+          POSTGRES_DB: ecobin_test_db
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     env:
       SECRET_KEY: ci-test-secret-key-not-for-production
       DEBUG: "True"
       ALLOWED_HOSTS: "localhost,127.0.0.1"
-      DB_ENGINE: django.db.backends.sqlite3
-      DB_NAME: ":memory:"
-      DB_USER: ""
-      DB_PASSWORD: ""
-      DB_HOST: ""
-      DB_PORT: ""
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: ecobin_test_db
+      DB_USER: postgres
+      DB_PASSWORD: 123
+      DB_HOST: localhost
+      DB_PORT: 5432
       CLOUDINARY_CLOUD_NAME: test
       CLOUDINARY_API_KEY: test
       CLOUDINARY_API_SECRET: test
