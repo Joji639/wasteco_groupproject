@@ -1,13 +1,12 @@
 """Tests for ecobinusers app."""
 
-from datetime import date, time, timedelta
+from datetime import date, time
 from django.test import TestCase
-from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework import status
 from accounts.models import CustomUser, UserProfile
 from .models import (
-    WastePickupRequest, PickupSchedule, Review,
+    WastePickupRequest, Review,
     WasteCollection, Complaint,
 )
 
@@ -110,42 +109,7 @@ class WastePickupRequestListTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 2. PICKUP DATE
-# ---------------------------------------------------------------------------
-
-class PickupDateTests(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.url = API + "pickup-date/"
-        self.user = _create_user(email="pd@test.com", phone="+919000000103")
-        UserProfile.objects.get_or_create(user=self.user, is_verified=True)
-        PickupSchedule.objects.filter(user=self.user).delete()
-        _auth(self.client, self.user)
-
-    def test_no_schedule_returns_default(self):
-        r = self.client.get(self.url)
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertIn("next_pickup_date", r.data["data"])
-
-    def test_future_schedule(self):
-        today = timezone.now().date()
-        future_date = today + timedelta(days=10)
-        PickupSchedule.objects.create(user=self.user, scheduled_date=future_date)
-        r = self.client.get(self.url)
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.data["data"]["next_pickup_date"], str(future_date))
-
-    def test_past_schedule_switches_to_next(self):
-        today = timezone.now().date()
-        past_date = today - timedelta(days=1)
-        PickupSchedule.objects.create(user=self.user, scheduled_date=past_date)
-        r = self.client.get(self.url)
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertIn("Switched to next", r.data["data"]["message"])
-
-
-# ---------------------------------------------------------------------------
-# 3. REVIEWS
+# 2. REVIEWS
 # ---------------------------------------------------------------------------
 
 class ReviewTests(TestCase):
@@ -184,15 +148,9 @@ class ReviewTests(TestCase):
         }, format="json")
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_list_reviews(self):
-        Review.objects.create(user=self.user, waste_request=self.waste_request, rating=5)
-        r = self.client.get(API + "reviews/list/")
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.data["count"], 1)
-
 
 # ---------------------------------------------------------------------------
-# 4. WASTE COLLECTIONS
+# 3. WASTE COLLECTIONS
 # ---------------------------------------------------------------------------
 
 class WasteCollectionHistoryTests(TestCase):
@@ -228,7 +186,7 @@ class WasteCollectionHistoryTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 5. COMPLAINTS
+# 4. COMPLAINTS
 # ---------------------------------------------------------------------------
 
 class ComplaintTests(TestCase):
@@ -302,7 +260,7 @@ class ComplaintTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 6. PERMISSIONS
+# 5. PERMISSIONS
 # ---------------------------------------------------------------------------
 
 class PermissionTests(TestCase):
@@ -314,7 +272,6 @@ class PermissionTests(TestCase):
     def test_unauthenticated_all_endpoints(self):
         urls = [
             (API + "requests/", "get"),
-            (API + "pickup-date/", "get"),
             (API + "reviews/", "get"),
             (API + "collections/", "get"),
             (API + "complaints/", "get"),

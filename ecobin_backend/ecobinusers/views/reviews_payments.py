@@ -43,22 +43,6 @@ class ReviewCreateView(APIView):
         )
 
 
-class ReviewListView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    @extend_schema(
-        tags=['User - Reviews'],
-        responses={200: ReviewSerializer(many=True)}
-    )
-    def get(self, request):
-        queryset = Review.objects.filter(user=request.user).order_by('-created_at')
-        serializer = ReviewSerializer(queryset, many=True)
-        return Response(
-            {"success": True, "count": len(serializer.data), "data": serializer.data},
-            status=status.HTTP_200_OK
-        )
-
-
 class WasteCollectionHistoryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
