@@ -1,5 +1,5 @@
 from .waste_pickup import WastePickupRequestCreateView, WastePickupRequestListView, PickupDateView
-from .reviews_payments import ReviewCreateView, ReviewListView, PaymentHistoryView, WasteCollectionHistoryView
+from .reviews_payments import ReviewCreateView, ReviewListView, WasteCollectionHistoryView
 from .complaints import ComplaintListView, ComplaintCreateView
 
 __all__ = [
@@ -8,7 +8,6 @@ __all__ = [
     'PickupDateView',
     'ReviewCreateView',
     'ReviewListView',
-    'PaymentHistoryView',
     'WasteCollectionHistoryView',
     'ComplaintListView',
     'ComplaintCreateView',

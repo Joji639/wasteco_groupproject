@@ -1,7 +1,6 @@
 """Tests for ecobinusers app."""
 
 from datetime import date, time, timedelta
-from decimal import Decimal
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -9,7 +8,7 @@ from rest_framework import status
 from accounts.models import CustomUser, UserProfile
 from .models import (
     WastePickupRequest, PickupSchedule, Review,
-    Payment, WasteCollection, Complaint,
+    WasteCollection, Complaint,
 )
 
 API = "/ecobinusers/"
@@ -193,38 +192,7 @@ class ReviewTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 4. PAYMENTS
-# ---------------------------------------------------------------------------
-
-class PaymentHistoryTests(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.url = API + "payments/"
-        self.user = _create_user(email="pay@test.com", phone="+919000000105")
-        UserProfile.objects.get_or_create(user=self.user, is_verified=True)
-        _auth(self.client, self.user)
-
-    def test_empty_payments(self):
-        r = self.client.get(self.url)
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.data["count"], 0)
-
-    def test_list_payments(self):
-        Payment.objects.create(user=self.user, amount=Decimal("100.00"), status="paid")
-        Payment.objects.create(user=self.user, amount=Decimal("200.00"), status="pending")
-        r = self.client.get(self.url)
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.data["count"], 2)
-
-    def test_only_own_payments(self):
-        other = _create_user(email="other_pay@test.com", phone="+919000000106")
-        Payment.objects.create(user=other, amount=Decimal("50.00"))
-        r = self.client.get(self.url)
-        self.assertEqual(r.data["count"], 0)
-
-
-# ---------------------------------------------------------------------------
-# 5. WASTE COLLECTIONS
+# 4. WASTE COLLECTIONS
 # ---------------------------------------------------------------------------
 
 class WasteCollectionHistoryTests(TestCase):
@@ -260,7 +228,7 @@ class WasteCollectionHistoryTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 6. COMPLAINTS
+# 5. COMPLAINTS
 # ---------------------------------------------------------------------------
 
 class ComplaintTests(TestCase):
@@ -322,27 +290,9 @@ class ComplaintTests(TestCase):
     def test_list_all_complaints(self):
         Complaint.objects.create(user=self.user, subject="A", description="D", status="open")
         Complaint.objects.create(user=self.user, subject="B", description="D", status="resolved")
-        r = self.client.get(self.list_url + "?filter=all")
+        r = self.client.get(self.list_url)
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertEqual(r.data["count"], 2)
-
-    def test_filter_open(self):
-        Complaint.objects.create(user=self.user, subject="A", description="D", status="open")
-        Complaint.objects.create(user=self.user, subject="B", description="D", status="resolved")
-        r = self.client.get(self.list_url + "?filter=open")
-        self.assertEqual(r.data["count"], 1)
-
-    def test_filter_resolved(self):
-        Complaint.objects.create(user=self.user, subject="A", description="D", status="open")
-        Complaint.objects.create(user=self.user, subject="B", description="D", status="resolved")
-        r = self.client.get(self.list_url + "?filter=resolved")
-        self.assertEqual(r.data["count"], 1)
-
-    def test_filter_pending(self):
-        Complaint.objects.create(user=self.user, subject="A", description="D", status="pending")
-        Complaint.objects.create(user=self.user, subject="B", description="D", status="open")
-        r = self.client.get(self.list_url + "?filter=pending")
-        self.assertEqual(r.data["count"], 1)
 
     def test_only_own_complaints(self):
         other = _create_user(email="other_comp@test.com", phone="+919000000110")
@@ -352,7 +302,7 @@ class ComplaintTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 7. PERMISSIONS
+# 6. PERMISSIONS
 # ---------------------------------------------------------------------------
 
 class PermissionTests(TestCase):
@@ -366,7 +316,6 @@ class PermissionTests(TestCase):
             (API + "requests/", "get"),
             (API + "pickup-date/", "get"),
             (API + "reviews/", "get"),
-            (API + "payments/", "get"),
             (API + "collections/", "get"),
             (API + "complaints/", "get"),
         ]

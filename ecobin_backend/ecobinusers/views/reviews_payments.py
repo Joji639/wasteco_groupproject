@@ -3,10 +3,8 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import Review, Payment, WasteCollection
-from ..serializers import (
-    ReviewSerializer, PaymentSerializer, WasteCollectionSerializer,
-)
+from ..models import Review, WasteCollection
+from ..serializers import ReviewSerializer, WasteCollectionSerializer
 
 
 class ReviewCreateView(APIView):
@@ -55,22 +53,6 @@ class ReviewListView(APIView):
     def get(self, request):
         queryset = Review.objects.filter(user=request.user).order_by('-created_at')
         serializer = ReviewSerializer(queryset, many=True)
-        return Response(
-            {"success": True, "count": len(serializer.data), "data": serializer.data},
-            status=status.HTTP_200_OK
-        )
-
-
-class PaymentHistoryView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    @extend_schema(
-        tags=['User - Payments'],
-        responses={200: PaymentSerializer(many=True)}
-    )
-    def get(self, request):
-        queryset = Payment.objects.filter(user=request.user).order_by('-created_at')
-        serializer = PaymentSerializer(queryset, many=True)
         return Response(
             {"success": True, "count": len(serializer.data), "data": serializer.data},
             status=status.HTTP_200_OK

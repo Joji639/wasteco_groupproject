@@ -1,4 +1,4 @@
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
@@ -13,22 +13,10 @@ class ComplaintListView(APIView):
 
     @extend_schema(
         tags=['User - Complaints'],
-        parameters=[
-            OpenApiParameter("filter", str, enum=["all", "open", "resolved", "pending"], description="Filter by status"),
-        ],
         responses={200: ComplaintSerializer(many=True)}
     )
     def get(self, request):
         queryset = Complaint.objects.filter(user=request.user).order_by('-created_at')
-
-        filter_param = request.query_params.get('filter', 'all')
-        if filter_param == 'open':
-            queryset = queryset.filter(status='open')
-        elif filter_param == 'resolved':
-            queryset = queryset.filter(status='resolved')
-        elif filter_param == 'pending':
-            queryset = queryset.filter(status='pending')
-
         serializer = ComplaintSerializer(queryset, many=True)
         return Response(
             {"success": True, "count": len(serializer.data), "data": serializer.data},
