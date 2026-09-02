@@ -87,9 +87,10 @@ class ComplaintSerializer(serializers.ModelSerializer):
         model = Complaint
         fields = [
             'id', 'user', 'user_email', 'waste_request', 'subject',
-            'description', 'status', 'response', 'created_at', 'updated_at',
+            'description', 'image', 'location', 'latitude', 'longitude',
+            'status', 'response', 'created_at', 'updated_at',
         ]
-        read_only_fields = ['id', 'user', 'response', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user', 'status', 'response', 'created_at', 'updated_at']
 
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user

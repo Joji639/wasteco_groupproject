@@ -279,6 +279,46 @@ class ComplaintTests(TestCase):
         }, format="json")
         self.assertEqual(r.status_code, status.HTTP_201_CREATED)
 
+    def test_create_complaint_with_location(self):
+        r = self.client.post(self.create_url, {
+            "subject": "Overflowing bin",
+            "description": "The bin near my house is overflowing",
+            "location": "123 Main Street, Ward 5",
+            "latitude": "10.012345",
+            "longitude": "76.345678",
+        }, format="json")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(r.data["data"]["location"], "123 Main Street, Ward 5")
+        self.assertEqual(r.data["data"]["latitude"], "10.012345")
+        self.assertEqual(r.data["data"]["longitude"], "76.345678")
+
+    def test_create_complaint_with_image(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+        from io import BytesIO
+        img = Image.new("RGB", (10, 10), color="red")
+        buf = BytesIO()
+        img.save(buf, format="JPEG")
+        buf.seek(0)
+        uploaded = SimpleUploadedFile("test.jpg", buf.read(), content_type="image/jpeg")
+        r = self.client.post(self.create_url, {
+            "subject": "Illegal dumping",
+            "description": "Someone dumped waste illegally",
+            "location": "Park Avenue",
+            "image": uploaded,
+        }, format="multipart")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED, msg=r.data)
+        self.assertIn("image", r.data["data"])
+
+    def test_create_complaint_without_image(self):
+        r = self.client.post(self.create_url, {
+            "subject": "Noise complaint",
+            "description": "Collection truck is too loud",
+            "location": "456 Oak Street",
+        }, format="json")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.assertIsNone(r.data["data"]["image"])
+
     def test_list_all_complaints(self):
         Complaint.objects.create(user=self.user, subject="A", description="D", status="open")
         Complaint.objects.create(user=self.user, subject="B", description="D", status="resolved")
