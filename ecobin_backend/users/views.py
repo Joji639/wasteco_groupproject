@@ -121,7 +121,7 @@ class AccountInfoView(APIView):
 
 
 class PersonalInfoView(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsVerifiedForActions]
+    permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
     @extend_schema(tags=['User'], responses={200: PersonalInfoSerializer})
