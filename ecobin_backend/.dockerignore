@@ -36,6 +36,10 @@ staticfiles/
 celerybeat-schedule
 celerybeat.pid
 
-# Local docs / collections — not needed inside image
+# Local docs / collections
 EcoBin_API.postman_collection.json
 POSTMAN_API_GUIDE.md
+
+# Docker files not needed in image
+docker-compose*.yml
+Dockerfile*

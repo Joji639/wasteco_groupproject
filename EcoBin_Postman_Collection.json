@@ -1,0 +1,1009 @@
+{
+  "info": {
+    "name": "EcoBin Production API",
+    "description": "EcoBin Backend - All 76 API Endpoints\nBase URL: https://ecobinproduction.duckdns.org\n\nCredentials:\n- User: user1@test.com / Test123!\n- Operator: rahul@test.com / Test123! (OP-986F392D)\n- OperatorAdmin: jacob@gmail.com / Test123! (OA-6B18A107)\n- SuperAdmin: ecobinadmin@gmail.com / ecobin@2026!",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://ecobinproduction.duckdns.org" },
+    { "key": "userToken", "value": "" },
+    { "key": "operatorToken", "value": "" },
+    { "key": "oaToken", "value": "" },
+    { "key": "saToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "pickupId", "value": "" },
+    { "key": "complaintId", "value": "" },
+    { "key": "communityId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "00 - PUBLIC",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) { pm.collectionVariables.set('newUserId', json.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newtestuser\",\n  \"email\": \"newtestuser@test.com\",\n  \"phone\": \"9876543210\",\n  \"password\": \"Test1234!\",\n  \"confirm_password\": \"Test1234!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/accounts/registeruser/", "host": ["{{baseUrl}}"], "path": ["accounts", "registeruser", ""] }
+          }
+        },
+        {
+          "name": "Register Staff (Operator)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newoperator\",\n  \"email\": \"newoperator@test.com\",\n  \"phone\": \"9876543211\",\n  \"role\": \"operator\",\n  \"ward_no\": \"1\",\n  \"password\": \"Test1234!\",\n  \"confirm_password\": \"Test1234!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/accounts/register/", "host": ["{{baseUrl}}"], "path": ["accounts", "register", ""] }
+          }
+        },
+        {
+          "name": "Register Staff (OperatorAdmin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newoa\",\n  \"email\": \"newoa@test.com\",\n  \"phone\": \"9876543212\",\n  \"role\": \"operatoradmin\",\n  \"panchayath\": \"TVM\",\n  \"password\": \"Test1234!\",\n  \"confirm_password\": \"Test1234!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/accounts/register/", "host": ["{{baseUrl}}"], "path": ["accounts", "register", ""] }
+          }
+        },
+        {
+          "name": "User Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.tokens) {",
+                  "  pm.collectionVariables.set('userToken', json.data.tokens.access);",
+                  "  pm.collectionVariables.set('refreshToken', json.data.tokens.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"user1@test.com\",\n  \"password\": \"Test123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/accounts/loginuser/", "host": ["{{baseUrl}}"], "path": ["accounts", "loginuser", ""] }
+          }
+        },
+        {
+          "name": "Staff Login (by email)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data) {",
+                  "  if (json.data.role === 'operator') { pm.collectionVariables.set('operatorToken', json.data.tokens.access); }",
+                  "  if (json.data.role === 'operatoradmin') { pm.collectionVariables.set('oaToken', json.data.tokens.access); }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"rahul@test.com\",\n  \"password\": \"Test123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/accounts/login/", "host": ["{{baseUrl}}"], "path": ["accounts", "login", ""] }
+          }
+        },
+        {
+          "name": "Staff Login (by operator_id)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator_id\": \"OP-986F392D\",\n  \"password\": \"Test123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/accounts/login/", "host": ["{{baseUrl}}"], "path": ["accounts", "login", ""] }
+          }
+        },
+        {
+          "name": "SuperAdmin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.tokens) {",
+                  "  pm.collectionVariables.set('saToken', json.data.tokens.access);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ecobinadmin@gmail.com\",\n  \"password\": \"ecobin@2026!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/superadmins/login/", "host": ["{{baseUrl}}"], "path": ["api", "superadmins", "login", ""] }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user1@test.com\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/accounts/forgotpassword/", "host": ["{{baseUrl}}"], "path": ["accounts", "forgotpassword", ""] }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user1@test.com\",\n  \"code\": \"123456\",\n  \"new_password\": \"NewTest123!\",\n  \"confirm_new_password\": \"NewTest123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/accounts/resetpassword/", "host": ["{{baseUrl}}"], "path": ["accounts", "resetpassword", ""] }
+          }
+        },
+        {
+          "name": "2FA Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"rahul@test.com\",\n  \"code\": \"123456\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/accounts/2falogin/", "host": ["{{baseUrl}}"], "path": ["accounts", "2falogin", ""] }
+          }
+        },
+        {
+          "name": "Swagger Docs",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/docs/", "host": ["{{baseUrl}}"], "path": ["api", "docs", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - USER",
+      "item": [
+        {
+          "name": "User - Onboarding (submit)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "key": [
+                { "key": "address", "value": "123 MG Road, Thiruvananthapuram", "type": "text" },
+                { "key": "current_location", "value": "Thiruvananthapuram, Kerala", "type": "text" },
+                { "key": "house_number", "value": "123A", "type": "text" },
+                { "key": "pin", "value": "695001", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/users/onboarding/", "host": ["{{baseUrl}}"], "path": ["api", "users", "onboarding", ""] }
+          }
+        },
+        {
+          "name": "User - Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/users/logout/", "host": ["{{baseUrl}}"], "path": ["api", "users", "logout", ""] }
+          }
+        },
+        {
+          "name": "User - Account Info (GET)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/account-info/", "host": ["{{baseUrl}}"], "path": ["api", "users", "account-info", ""] }
+          }
+        },
+        {
+          "name": "User - Account Info (UPDATE)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"user1_updated\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/users/account-info/", "host": ["{{baseUrl}}"], "path": ["api", "users", "account-info", ""] }
+          }
+        },
+        {
+          "name": "User - Personal Info (GET)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/personal-info/", "host": ["{{baseUrl}}"], "path": ["api", "users", "personal-info", ""] }
+          }
+        },
+        {
+          "name": "User - Personal Info (UPDATE)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "key": [
+                { "key": "address", "value": "456 Updated Road, TVM", "type": "text" },
+                { "key": "ward_no", "value": "2", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/users/personal-info/", "host": ["{{baseUrl}}"], "path": ["api", "users", "personal-info", ""] }
+          }
+        },
+        {
+          "name": "User - Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"Test123!\",\n  \"new_password\": \"Test1234!\",\n  \"confirm_new_password\": \"Test1234!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/users/change-password/", "host": ["{{baseUrl}}"], "path": ["api", "users", "change-password", ""] }
+          }
+        },
+        {
+          "name": "User - Create Pickup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) { pm.collectionVariables.set('pickupId', json.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickup_type\": \"ON_DEMAND\",\n  \"place\": \"MG Road, Thiruvananthapuram\",\n  \"latitude\": 8.5241,\n  \"longitude\": 76.9366,\n  \"description\": \"Mixed household waste - 3 bags\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/users/pickups/", "host": ["{{baseUrl}}"], "path": ["api", "users", "pickups", ""] }
+          }
+        },
+        {
+          "name": "User - Submit Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Excellent service! Very professional.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/users/pickups/{{pickupId}}/review/", "host": ["{{baseUrl}}"], "path": ["api", "users", "pickups", "{{pickupId}}", "review", ""] }
+          }
+        },
+        {
+          "name": "User - Get Review Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/users/pickups/{{pickupId}}/review/detail/", "host": ["{{baseUrl}}"], "path": ["api", "users", "pickups", "{{pickupId}}", "review", "detail", ""] }
+          }
+        },
+        {
+          "name": "User - Create Complaint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) { pm.collectionVariables.set('complaintId', json.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"place\": \"MG Road, Thiruvananthapuram\",\n  \"latitude\": 8.5241,\n  \"longitude\": 76.9366,\n  \"description\": \"Waste not collected on scheduled day\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/user/complaints/", "host": ["{{baseUrl}}"], "path": ["api", "user", "complaints", ""] }
+          }
+        },
+        {
+          "name": "User - List Complaints",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/user/complaints/list/", "host": ["{{baseUrl}}"], "path": ["api", "user", "complaints", "list", ""] }
+          }
+        },
+        {
+          "name": "User - Get Complaint Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/user/complaints/{{complaintId}}/", "host": ["{{baseUrl}}"], "path": ["api", "user", "complaints", "{{complaintId}}", ""] }
+          }
+        },
+        {
+          "name": "User - Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/payments/user/pickups/{{pickupId}}/payment/status/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "user", "pickups", "{{pickupId}}", "payment", "status", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - OPERATOR",
+      "item": [
+        {
+          "name": "Operator - Onboarding (GET)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operators/onboarding/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "onboarding", ""] }
+          }
+        },
+        {
+          "name": "Operator - Onboarding (SUBMIT)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "key": [
+                { "key": "address", "value": "456 Operator Lane, TVM", "type": "text" },
+                { "key": "ward_no", "value": "1", "type": "text" },
+                { "key": "panchayath", "value": "TVM Corporation", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/operators/onboarding/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "onboarding", ""] }
+          }
+        },
+        {
+          "name": "Operator - Onboarding (UPDATE)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "key": [
+                { "key": "address", "value": "789 Updated Lane, TVM", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/operators/onboarding/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "onboarding", ""] }
+          }
+        },
+        {
+          "name": "Operator - Account Info (GET)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operators/account-info/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "account-info", ""] }
+          }
+        },
+        {
+          "name": "Operator - Account Info (UPDATE)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{operatorToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9876543999\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operators/account-info/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "account-info", ""] }
+          }
+        },
+        {
+          "name": "Operator - Personal Info (GET)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operators/personal-info/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "personal-info", ""] }
+          }
+        },
+        {
+          "name": "Operator - Personal Info (UPDATE)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "key": [
+                { "key": "address", "value": "789 New Address, TVM", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/operators/personal-info/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "personal-info", ""] }
+          }
+        },
+        {
+          "name": "Operator - Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{operatorToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"Test123!\",\n  \"new_password\": \"Test1234!\",\n  \"confirm_new_password\": \"Test1234!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operators/change-password/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "change-password", ""] }
+          }
+        },
+        {
+          "name": "Operator - Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{operatorToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operators/logout/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "logout", ""] }
+          }
+        },
+        {
+          "name": "Operator - Reviews",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operators/reviews/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "reviews", ""] }
+          }
+        },
+        {
+          "name": "Operator - Reviews Summary",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operators/reviews/summary/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "reviews", "summary", ""] }
+          }
+        },
+        {
+          "name": "Operator - Update Location",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{operatorToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 8.5241,\n  \"longitude\": 76.9366\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operators/location/update/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "location", "update", ""] }
+          }
+        },
+        {
+          "name": "Operator - Get Location",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operators/location/{{pickupId}}/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "location", "{{pickupId}}", ""] }
+          }
+        },
+        {
+          "name": "Operator - Assigned Pickups",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/payments/operator/assigned-pickups/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "operator", "assigned-pickups", ""] }
+          }
+        },
+        {
+          "name": "Operator - Start Pickup Task",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/payments/operator/pickups/{{pickupId}}/start/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "operator", "pickups", "{{pickupId}}", "start", ""] }
+          }
+        },
+        {
+          "name": "Operator - My Collections",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/payments/operator/collections/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "operator", "collections", ""] }
+          }
+        },
+        {
+          "name": "Operator - Record Waste Collection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) { pm.collectionVariables.set('collectionId', json.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{operatorToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickup_request\": \"{{pickupId}}\",\n  \"plastic_kg\": 5.5,\n  \"e_waste_kg\": 2.0,\n  \"payment_method\": \"CASH\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/payments/operator/collections/create/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "operator", "collections", "create", ""] }
+          }
+        },
+        {
+          "name": "Operator - Collection Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/payments/operator/collections/{{collectionId}}/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "operator", "collections", "{{collectionId}}", ""] }
+          }
+        },
+        {
+          "name": "Operator - Initiate Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{operatorToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/payments/operator/collections/{{collectionId}}/payment/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "operator", "collections", "{{collectionId}}", "payment", ""] }
+          }
+        },
+        {
+          "name": "Operator - My Complaints",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operator/complaints/", "host": ["{{baseUrl}}"], "path": ["api", "operator", "complaints", ""] }
+          }
+        },
+        {
+          "name": "Operator - Complaint Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operator/complaints/{{complaintId}}/", "host": ["{{baseUrl}}"], "path": ["api", "operator", "complaints", "{{complaintId}}", ""] }
+          }
+        },
+        {
+          "name": "Operator - Update Complaint Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{operatorToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operator/complaints/{{complaintId}}/status/", "host": ["{{baseUrl}}"], "path": ["api", "operator", "complaints", "{{complaintId}}", "status", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - OPERATOR ADMIN",
+      "item": [
+        {
+          "name": "OA - List Operator Onboardings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operator-admins/onboardings/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "onboardings", ""] }
+          }
+        },
+        {
+          "name": "OA - Approve Operator Onboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{oaToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator_id\": \"OP-986F392D\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operator-admins/onboardings/approve/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "onboardings", "approve", ""] }
+          }
+        },
+        {
+          "name": "OA - Reject Operator Onboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{oaToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator_id\": \"OP-986F392D\",\n  \"reason\": \"Documents incomplete\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operator-admins/onboardings/reject/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "onboardings", "reject", ""] }
+          }
+        },
+        {
+          "name": "OA - List User Onboardings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operator-admins/user-onboardings/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "user-onboardings", ""] }
+          }
+        },
+        {
+          "name": "OA - Approve User Onboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{oaToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"bb234aaf-3d25-41a1-bacb-d73ec866e3c1\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operator-admins/user-onboardings/approve/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "user-onboardings", "approve", ""] }
+          }
+        },
+        {
+          "name": "OA - Reject User Onboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{oaToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"bb234aaf-3d25-41a1-bacb-d73ec866e3c1\",\n  \"reason\": \"Invalid documents\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operator-admins/user-onboardings/reject/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "user-onboardings", "reject", ""] }
+          }
+        },
+        {
+          "name": "OA - List Pickups",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operator-admins/pickups/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "pickups", ""] }
+          }
+        },
+        {
+          "name": "OA - Pickup Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operator-admins/pickups/{{pickupId}}/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "pickups", "{{pickupId}}", ""] }
+          }
+        },
+        {
+          "name": "OA - Accept Pickup",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operator-admins/pickups/{{pickupId}}/accept/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "pickups", "{{pickupId}}", "accept", ""] }
+          }
+        },
+        {
+          "name": "OA - Reject Pickup",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{oaToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Cannot handle this type of waste\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operator-admins/pickups/{{pickupId}}/reject/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "pickups", "{{pickupId}}", "reject", ""] }
+          }
+        },
+        {
+          "name": "OA - Assign Operator to Pickup",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{oaToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator_id\": \"OP-986F392D\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operator-admins/pickups/{{pickupId}}/assign-operator/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "pickups", "{{pickupId}}", "assign-operator", ""] }
+          }
+        },
+        {
+          "name": "OA - Operator Ratings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operator-admins/operators/ratings/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "operators", "ratings", ""] }
+          }
+        },
+        {
+          "name": "OA - Operator Reviews",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operator-admins/operators/{{operatorId}}/reviews/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "operators", "{{operatorId}}", "reviews", ""] }
+          }
+        },
+        {
+          "name": "OA - List Complaints",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operator-admin/complaints/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "complaints", ""] }
+          }
+        },
+        {
+          "name": "OA - Complaint Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operator-admin/complaints/{{complaintId}}/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "complaints", "{{complaintId}}", ""] }
+          }
+        },
+        {
+          "name": "OA - Assign Complaint",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{oaToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator_id\": \"OP-986F392D\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operator-admin/complaints/{{complaintId}}/assign/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "complaints", "{{complaintId}}", "assign", ""] }
+          }
+        },
+        {
+          "name": "OA - Create Community",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) { pm.collectionVariables.set('communityId', json.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{oaToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Test Community\",\n  \"description\": \"Test community group\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operator-admin/communities/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "communities", ""] }
+          }
+        },
+        {
+          "name": "OA - Update Community",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{oaToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Community Name\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operator-admin/communities/{{communityId}}/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "communities", "{{communityId}}", ""] }
+          }
+        },
+        {
+          "name": "OA - Deactivate Community",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operator-admin/communities/{{communityId}}/deactivate/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "communities", "{{communityId}}", "deactivate", ""] }
+          }
+        },
+        {
+          "name": "OA - Remove Member",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/operator-admin/communities/{{communityId}}/members/1/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "communities", "{{communityId}}", "members", "1", ""] }
+          }
+        },
+        {
+          "name": "OA - Update Member Permissions",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{oaToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"can_add_members\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/operator-admin/communities/{{communityId}}/members/1/permissions/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "communities", "{{communityId}}", "members", "1", "permissions", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - SHARED (Operator + OA)",
+      "item": [
+        {
+          "name": "List Communities",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/communities/", "host": ["{{baseUrl}}"], "path": ["api", "communities", ""] }
+          }
+        },
+        {
+          "name": "Community Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/communities/{{communityId}}/", "host": ["{{baseUrl}}"], "path": ["api", "communities", "{{communityId}}", ""] }
+          }
+        },
+        {
+          "name": "List Community Members",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/communities/{{communityId}}/members/", "host": ["{{baseUrl}}"], "path": ["api", "communities", "{{communityId}}", "members", ""] }
+          }
+        },
+        {
+          "name": "Add Community Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{oaToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"6812f988-2f80-4dc8-a65f-b75c2a9ab362\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/communities/{{communityId}}/members/add/", "host": ["{{baseUrl}}"], "path": ["api", "communities", "{{communityId}}", "members", "add", ""] }
+          }
+        },
+        {
+          "name": "Message History",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/communities/{{communityId}}/messages/", "host": ["{{baseUrl}}"], "path": ["api", "communities", "{{communityId}}", "messages", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - SUPERADMIN",
+      "item": [
+        {
+          "name": "SA - List Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{saToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/superadmins/users/", "host": ["{{baseUrl}}"], "path": ["api", "superadmins", "users", ""] }
+          }
+        },
+        {
+          "name": "SA - List Operators",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{saToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/superadmins/operators/", "host": ["{{baseUrl}}"], "path": ["api", "superadmins", "operators", ""] }
+          }
+        },
+        {
+          "name": "SA - List Operator Admins",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{saToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/superadmins/operator-admins/", "host": ["{{baseUrl}}"], "path": ["api", "superadmins", "operator-admins", ""] }
+          }
+        },
+        {
+          "name": "SA - List Onboardings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{saToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/superadmins/onboardings/", "host": ["{{baseUrl}}"], "path": ["api", "superadmins", "onboardings", ""] }
+          }
+        },
+        {
+          "name": "SA - Operator Ratings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{saToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/superadmins/operators/ratings/", "host": ["{{baseUrl}}"], "path": ["api", "superadmins", "operators", "ratings", ""] }
+          }
+        }
+      ]
+    }
+  ]
+}
