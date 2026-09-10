@@ -8,6 +8,7 @@ class PickupRequestSerializer(serializers.ModelSerializer):
     user_email = serializers.CharField(source='user.email', read_only=True)
     latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
     longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
+    image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = PickupRequest
