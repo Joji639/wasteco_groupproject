@@ -9,7 +9,7 @@ from accounts.models import CustomUser, UserProfile, OperatorProfile, OperatorAd
 from accounts.serializers import get_tokens_for_user
 from pickups.models import PickupRequest
 
-API = "/api/operator-admins/"
+API = "/operator-admins/"
 
 
 def _create_user(email="u@test.com", password="Test1234!", **kw):

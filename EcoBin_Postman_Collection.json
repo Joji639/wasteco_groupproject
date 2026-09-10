@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "EcoBin Production API",
-    "description": "EcoBin Backend - All 76 API Endpoints\nBase URL: https://ecobinproduction.duckdns.org\n\nCredentials:\n- User: user1@test.com / Test123!\n- Operator: rahul@test.com / Test123! (OP-986F392D)\n- OperatorAdmin: jacob@gmail.com / Test123! (OA-6B18A107)\n- SuperAdmin: ecobinadmin@gmail.com / ecobin@2026!",
+    "description": "EcoBin Backend - All 76 API Endpoints\nBase URL: https://ecobinproduction.duckdns.org\n\nCredentials:\n- User: user1@test.com / Test123!\n- Operator: rahul@test.com / Test123! (OP-9C2A4306)\n- OperatorAdmin: jacob@gmail.com / Test123! (OA-C8BE0C74)\n- SuperAdmin: ecobinadmin@gmail.com / ecobin@2026!",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -125,7 +125,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"operator_id\": \"OP-986F392D\",\n  \"password\": \"Test123!\"\n}"
+              "raw": "{\n  \"operator_id\": \"OP-9C2A4306\",\n  \"password\": \"Test123!\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/accounts/login/", "host": ["{{baseUrl}}"], "path": ["accounts", "login", ""] }
           }
@@ -675,7 +675,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"operator_id\": \"OP-986F392D\"\n}"
+              "raw": "{\n  \"operator_id\": \"OP-9C2A4306\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/operator-admins/onboardings/approve/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "onboardings", "approve", ""] }
           }
@@ -690,7 +690,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"operator_id\": \"OP-986F392D\",\n  \"reason\": \"Documents incomplete\"\n}"
+              "raw": "{\n  \"operator_id\": \"OP-9C2A4306\",\n  \"reason\": \"Documents incomplete\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/operator-admins/onboardings/reject/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "onboardings", "reject", ""] }
           }
@@ -782,7 +782,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"operator_id\": \"OP-986F392D\"\n}"
+              "raw": "{\n  \"operator_id\": \"OP-9C2A4306\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/operator-admins/pickups/{{pickupId}}/assign-operator/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "pickups", "{{pickupId}}", "assign-operator", ""] }
           }
@@ -829,7 +829,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"operator_id\": \"OP-986F392D\"\n}"
+              "raw": "{\n  \"operator_id\": \"OP-9C2A4306\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/operator-admin/complaints/{{complaintId}}/assign/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "complaints", "{{complaintId}}", "assign", ""] }
           }

@@ -11,7 +11,7 @@ from accounts.models import (
 )
 from accounts.serializers import get_tokens_for_user
 
-API = "/api/superadmins/"
+API = "/superadmins/"
 
 
 def _create_user(email="u@test.com", password="Test1234!", **kw):
@@ -170,41 +170,41 @@ class PermissionMatrixTests(TestCase):
 
     def test_user_endpoints_allowed_for_user(self):
         _auth(self.client, self.regular_user)
-        self.assertEqual(self.client.get("/api/users/account-info/").status_code, 200)
+        self.assertEqual(self.client.get("/users/account-info/").status_code, 200)
 
     def test_user_endpoints_denied_for_unauthenticated(self):
-        self.assertEqual(self.client.get("/api/users/account-info/").status_code, 401)
+        self.assertEqual(self.client.get("/users/account-info/").status_code, 401)
 
     def test_staff_onboarding_allowed_for_operator(self):
         _auth(self.client, self.operator)
-        self.assertEqual(self.client.get("/api/operators/onboarding/").status_code, 200)
+        self.assertEqual(self.client.get("/operators/onboarding/").status_code, 200)
 
     def test_staff_onboarding_denied_for_user(self):
         _auth(self.client, self.regular_user)
-        self.assertEqual(self.client.get("/api/operators/onboarding/").status_code, 403)
+        self.assertEqual(self.client.get("/operators/onboarding/").status_code, 403)
 
     def test_opadmin_list_allowed_for_opadmin(self):
         _auth(self.client, self.opadmin)
-        self.assertEqual(self.client.get("/api/operator-admins/onboardings/").status_code, 200)
+        self.assertEqual(self.client.get("/operator-admins/onboardings/").status_code, 200)
 
     def test_opadmin_list_denied_for_operator(self):
         _auth(self.client, self.operator)
-        self.assertEqual(self.client.get("/api/operator-admins/onboardings/").status_code, 403)
+        self.assertEqual(self.client.get("/operator-admins/onboardings/").status_code, 403)
 
     def test_opadmin_approve_denied_for_operator(self):
         _auth(self.client, self.operator)
-        r = self.client.post("/api/operator-admins/onboardings/approve/",
+        r = self.client.post("/operator-admins/onboardings/approve/",
                              {"id": self.pending_onb.id}, format="json")
         self.assertEqual(r.status_code, 403)
 
     def test_superadmin_approve_user_onboarding(self):
         _auth(self.client, self.sa)
-        r = self.client.post("/api/operator-admins/user-onboardings/approve/",
+        r = self.client.post("/operator-admins/user-onboardings/approve/",
                              {"id": self.pending_profile.id}, format="json")
         self.assertEqual(r.status_code, 200)
 
     def test_user_cannot_approve_user_onboarding(self):
         _auth(self.client, self.regular_user)
-        r = self.client.post("/api/operator-admins/user-onboardings/approve/",
+        r = self.client.post("/operator-admins/user-onboardings/approve/",
                              {"id": self.pending_profile.id}, format="json")
         self.assertEqual(r.status_code, 403)
