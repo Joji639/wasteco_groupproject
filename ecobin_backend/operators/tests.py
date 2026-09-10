@@ -7,7 +7,7 @@ from rest_framework import status
 from accounts.models import CustomUser, UserProfile, OperatorProfile, OperatorAdminProfile, OperatorOnboarding
 from accounts.serializers import get_tokens_for_user
 
-API = "/api/operators/"
+API = "/operators/"
 
 
 def _create_user(email="u@test.com", password="Test1234!", **kw):

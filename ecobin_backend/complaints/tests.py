@@ -12,7 +12,7 @@ from accounts.models import CustomUser, OperatorProfile, OperatorAdminProfile
 from accounts.serializers import get_tokens_for_user
 from .models import Complaint, ComplaintStatusHistory
 
-API = "/api/"
+API = "/"
 
 
 def _create_user(email="u@test.com", password="Test1234!", **kw):

@@ -12,10 +12,10 @@ from accounts.models import CustomUser, OperatorProfile, OperatorAdminProfile
 from accounts.serializers import get_tokens_for_user
 from pickups.models import PickupRequest, OperatorReview
 
-USER_API = "/api/users/"
-OPERATOR_API = "/api/operators/"
-OPADMIN_API = "/api/operator-admins/"
-SUPERADMIN_API = "/api/superadmins/"
+USER_API = "/users/"
+OPERATOR_API = "/operators/"
+OPADMIN_API = "/operator-admins/"
+SUPERADMIN_API = "/superadmins/"
 
 
 def _create_user(email="u@test.com", password="Test1234!", **kw):
@@ -486,7 +486,7 @@ class PickupGeocodingTests(TestCase):
         _auth(self.client, self.user)
         with patch('pickups.serializers.geocode_place') as mock_geocode:
             mock_geocode.return_value = (9.9312, 76.2673)
-            resp = self.client.post('/api/users/pickups/', {
+            resp = self.client.post('/users/pickups/', {
                 'place': 'MG Road, Kochi, Kerala',
                 'description': 'Waste near home.',
             }, format='json')
@@ -497,7 +497,7 @@ class PickupGeocodingTests(TestCase):
 
     def test_pickup_with_lat_lng_no_place(self):
         _auth(self.client, self.user)
-        resp = self.client.post('/api/users/pickups/', {
+        resp = self.client.post('/users/pickups/', {
             'latitude': '9.931200',
             'longitude': '76.267300',
             'description': 'Direct coordinates.',
@@ -508,7 +508,7 @@ class PickupGeocodingTests(TestCase):
         _auth(self.client, self.user)
         with patch('pickups.serializers.geocode_place') as mock_geocode:
             mock_geocode.return_value = (10.0000, 77.0000)
-            resp = self.client.post('/api/users/pickups/', {
+            resp = self.client.post('/users/pickups/', {
                 'place': 'Chennai, Tamil Nadu',
                 'latitude': '9.931200',
                 'longitude': '76.267300',
@@ -522,7 +522,7 @@ class PickupGeocodingTests(TestCase):
         _auth(self.client, self.user)
         with patch('pickups.serializers.geocode_place') as mock_geocode:
             mock_geocode.return_value = None
-            resp = self.client.post('/api/users/pickups/', {
+            resp = self.client.post('/users/pickups/', {
                 'place': 'XYZNONEXISTENT12345',
                 'description': 'Bad place.',
             }, format='json')
@@ -530,7 +530,7 @@ class PickupGeocodingTests(TestCase):
 
     def test_pickup_no_place_no_lat_lng_rejected(self):
         _auth(self.client, self.user)
-        resp = self.client.post('/api/users/pickups/', {
+        resp = self.client.post('/users/pickups/', {
             'description': 'Missing location.',
         }, format='json')
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
@@ -549,7 +549,7 @@ class OperatorLocationTrackingTests(TestCase):
 
     def test_operator_update_location_success(self):
         _auth(self.client, self.operator)
-        resp = self.client.post('/api/operators/location/update/', {
+        resp = self.client.post('/operators/location/update/', {
             'pickup_id': str(self.pickup.id),
             'latitude': 9.9312,
             'longitude': 76.2673,
@@ -559,33 +559,33 @@ class OperatorLocationTrackingTests(TestCase):
 
     def test_user_get_operator_location(self):
         _auth(self.client, self.operator)
-        self.client.post('/api/operators/location/update/', {
+        self.client.post('/operators/location/update/', {
             'pickup_id': str(self.pickup.id),
             'latitude': 9.9312,
             'longitude': 76.2673,
         }, format='json')
 
         _auth(self.client, self.user)
-        resp = self.client.get(f'/api/operators/location/{self.pickup.id}/')
+        resp = self.client.get(f'/operators/location/{self.pickup.id}/')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIsNotNone(resp.data['data'])
         self.assertEqual(resp.data['data']['lat'], '9.9312')
 
     def test_operator_get_own_location(self):
         _auth(self.client, self.operator)
-        self.client.post('/api/operators/location/update/', {
+        self.client.post('/operators/location/update/', {
             'pickup_id': str(self.pickup.id),
             'latitude': 9.9312,
             'longitude': 76.2673,
         }, format='json')
 
-        resp = self.client.get(f'/api/operators/location/{self.pickup.id}/')
+        resp = self.client.get(f'/operators/location/{self.pickup.id}/')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIsNotNone(resp.data['data'])
 
     def test_unauthorized_user_cannot_see_location(self):
         _auth(self.client, self.operator)
-        self.client.post('/api/operators/location/update/', {
+        self.client.post('/operators/location/update/', {
             'pickup_id': str(self.pickup.id),
             'latitude': 9.9312,
             'longitude': 76.2673,
@@ -593,19 +593,19 @@ class OperatorLocationTrackingTests(TestCase):
 
         other_user = _create_user(email='other@test.com')
         _auth(self.client, other_user)
-        resp = self.client.get(f'/api/operators/location/{self.pickup.id}/')
+        resp = self.client.get(f'/operators/location/{self.pickup.id}/')
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_location_not_available_when_not_updated(self):
         _auth(self.client, self.user)
-        resp = self.client.get(f'/api/operators/location/{self.pickup.id}/')
+        resp = self.client.get(f'/operators/location/{self.pickup.id}/')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIsNone(resp.data['data'])
 
     def test_wrong_operator_cannot_update_location(self):
         other_op = _create_operator(email='other_op@test.com')
         _auth(self.client, other_op)
-        resp = self.client.post('/api/operators/location/update/', {
+        resp = self.client.post('/operators/location/update/', {
             'pickup_id': str(self.pickup.id),
             'latitude': 9.9312,
             'longitude': 76.2673,
@@ -614,14 +614,14 @@ class OperatorLocationTrackingTests(TestCase):
 
     def test_update_location_missing_fields(self):
         _auth(self.client, self.operator)
-        resp = self.client.post('/api/operators/location/update/', {
+        resp = self.client.post('/operators/location/update/', {
             'pickup_id': str(self.pickup.id),
         }, format='json')
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_update_location_invalid_coordinates(self):
         _auth(self.client, self.operator)
-        resp = self.client.post('/api/operators/location/update/', {
+        resp = self.client.post('/operators/location/update/', {
             'pickup_id': str(self.pickup.id),
             'latitude': 999,
             'longitude': 76.2673,
@@ -630,7 +630,7 @@ class OperatorLocationTrackingTests(TestCase):
 
     def test_update_location_pickup_not_found(self):
         _auth(self.client, self.operator)
-        resp = self.client.post('/api/operators/location/update/', {
+        resp = self.client.post('/operators/location/update/', {
             'pickup_id': str(uuid.uuid4()),
             'latitude': 9.9312,
             'longitude': 76.2673,
@@ -639,5 +639,5 @@ class OperatorLocationTrackingTests(TestCase):
 
     def test_location_pickup_not_found(self):
         _auth(self.client, self.user)
-        resp = self.client.get(f'/api/operators/location/{uuid.uuid4()}/')
+        resp = self.client.get(f'/operators/location/{uuid.uuid4()}/')
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)

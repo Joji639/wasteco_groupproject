@@ -9,7 +9,7 @@ from accounts.models import CustomUser, UserProfile, OperatorProfile, OperatorAd
 from accounts.serializers import get_tokens_for_user
 from pickups.models import PickupRequest
 
-API = "/api/users/"
+API = "/users/"
 
 
 # ---------------------------------------------------------------------------
@@ -237,7 +237,7 @@ class ChangePasswordTests(TestCase):
 # PICKUP REQUEST APIs (moved from pickups app)
 # ===========================================================================
 
-PICKUP_API = "/api/users/pickups/"
+PICKUP_API = "/users/pickups/"
 
 DEFAULT_PICKUP_DATA = {
     "latitude": "9.931200",

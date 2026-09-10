@@ -17,7 +17,7 @@ from pickups.models import PickupRequest
 from .models import WasteCollection, Payment
 from .views import razorpay_webhook
 
-API = "/api/payments/"
+API = "/payments/"
 
 
 def _create_user(email="u@test.com", password="Test1234!", **kw):

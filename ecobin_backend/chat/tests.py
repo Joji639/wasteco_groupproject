@@ -11,7 +11,7 @@ from accounts.serializers import get_tokens_for_user
 from .models import Community, CommunityMember, Message
 from .consumers import CommunityChatConsumer
 
-API = '/api/'
+API = '/'
 
 
 def _create_operator_admin(email='oa@test.com', password='Test1234!', panchayath='TVM', **kw):
