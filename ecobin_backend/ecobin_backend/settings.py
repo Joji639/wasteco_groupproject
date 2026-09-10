@@ -56,6 +56,15 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'drf_spectacular',
     'accounts',
+    'pickups',
+    'users',
+    'operators',
+    'operator_admins',
+    'superadmins',
+    'payments',
+    'complaints',
+    'channels',
+    'chat',
 ]
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -89,6 +98,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'ecobin_backend.wsgi.application'
+ASGI_APPLICATION = 'ecobin_backend.asgi.application'
+
+# Django Channels
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [env('REDIS_URL', default='redis://localhost:6379/0')],
+        },
+    },
+}
 
 
 # Database
@@ -207,6 +227,10 @@ DEFAULT_FROM_EMAIL = env('EMAIL_HOST_USER')
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET')
 
+# Razorpay
+RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', default='rzp_test_1234567890abcdef')
+RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', default='your_razorpay_test_secret_here')
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'EcoBin API',
     'DESCRIPTION': 'API documentation for EcoBin backend',
@@ -224,6 +248,11 @@ SPECTACULAR_SETTINGS = {
         {'name': 'User - Reviews', 'description': 'User review endpoints'},
         {'name': 'User - Payments', 'description': 'User payment history endpoints'},
         {'name': 'User - Collections', 'description': 'User waste collection history endpoints'},
+        {'name': 'Operators', 'description': 'Operator task management — start tasks, record waste, view collections, view reviews and ratings'},
+        {'name': 'Payments', 'description': 'Payment APIs — Razorpay integration, collection recording, webhook'},
         {'name': 'User - Complaints', 'description': 'User complaint endpoints'},
+        {'name': 'Chat - Communities', 'description': 'Community group chat management — create, view, update, deactivate groups'},
+        {'name': 'Chat - Members', 'description': 'Community member management — add, remove, list, grant permissions'},
+        {'name': 'Chat - Messages', 'description': 'Chat message history — paginated REST endpoint'},
     ],
 }

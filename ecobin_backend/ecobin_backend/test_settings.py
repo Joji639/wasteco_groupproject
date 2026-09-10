@@ -24,3 +24,9 @@ CELERY_TASK_ALWAYS_EAGER = True
 DEFAULT_FILE_STORAGE = "django.core.files.storage.InMemoryStorage"
 
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    }
+}
