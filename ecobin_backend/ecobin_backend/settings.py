@@ -56,7 +56,15 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'drf_spectacular',
     'accounts',
-    'ecobinusers',
+    'pickups',
+    'users',
+    'operators',
+    'operator_admins',
+    'superadmins',
+    'payments',
+    'complaints',
+    'channels',
+    'chat',
 ]
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -90,6 +98,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'ecobin_backend.wsgi.application'
+ASGI_APPLICATION = 'ecobin_backend.asgi.application'
+
+# Django Channels
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [env('REDIS_URL', default='redis://localhost:6379/0')],
+        },
+    },
+}
 
 
 # Database
@@ -208,23 +227,29 @@ DEFAULT_FROM_EMAIL = env('EMAIL_HOST_USER')
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET')
 
+# Razorpay
+RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', default='rzp_test_1234567890abcdef')
+RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', default='your_razorpay_test_secret_here')
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'EcoBin API',
-    'DESCRIPTION': 'API documentation for EcoBin backend',
+    'DESCRIPTION': 'EcoBin Waste Management Backend API',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
     'TAGS': [
-        {'name': 'Public', 'description': 'Public endpoints — no authentication required'},
-        {'name': 'User', 'description': 'Authenticated user endpoints — requires User role'},
-        {'name': 'Staff', 'description': 'Staff endpoints — requires Operator or OperatorAdmin role'},
-        {'name': 'Operator Admin', 'description': 'Admin panel endpoints — requires OperatorAdmin or SuperAdmin role'},
-        {'name': 'Super Admin', 'description': 'Super admin endpoints — requires SuperAdmin role only'},
-        {'name': 'User - Waste Pickup', 'description': 'User waste pickup request endpoints'},
-        {'name': 'User - Pickup Date', 'description': 'User pickup date schedule endpoints'},
-        {'name': 'User - Reviews', 'description': 'User review endpoints'},
-        {'name': 'User - Payments', 'description': 'User payment history endpoints'},
-        {'name': 'User - Collections', 'description': 'User waste collection history endpoints'},
-        {'name': 'User - Complaints', 'description': 'User complaint endpoints'},
+        {'name': 'Public', 'description': 'Public endpoints — no authentication required (Register, Login, Password Reset, 2FA Login, Google Auth)'},
+        {'name': 'User', 'description': 'User endpoints — requires User role (Onboarding, Account Info, Profile, Password Change, Logout)'},
+        {'name': 'User - Reviews', 'description': 'User review endpoints — submit and view operator reviews for completed pickups'},
+        {'name': 'User - Complaints', 'description': 'User complaint endpoints — create, list, and view complaints'},
+        {'name': 'User - Payments', 'description': 'User payment status — view payment status for pickups'},
+        {'name': 'Staff', 'description': 'Staff endpoints — requires Operator or OperatorAdmin role (Onboarding, Account Info, Profile, Password Change, Logout)'},
+        {'name': 'Operators', 'description': 'Operator endpoints — requires Operator role (Onboarding, Account, Reviews, Location, Assigned Pickups, Collections, Payments, Complaints)'},
+        {'name': 'Operator Admins', 'description': 'Operator Admin endpoints — requires OperatorAdmin role (Onboardings, Pickups, Complaints, Operator Ratings)'},
+        {'name': 'Super Admins', 'description': 'SuperAdmin endpoints — requires SuperAdmin role (Users, Operators, OperatorAdmins, Onboardings, Ratings)'},
+        {'name': 'Pickups', 'description': 'Pickup request endpoints — create and manage waste pickup requests'},
+        {'name': 'Chat - Communities', 'description': 'Community group chat — create, list, update, deactivate communities'},
+        {'name': 'Chat - Members', 'description': 'Community members — add, remove, list, update permissions'},
+        {'name': 'Chat - Messages', 'description': 'Chat messages — paginated message history for communities'},
     ],
 }
