@@ -404,26 +404,26 @@ class OperatorAdminPickupAcceptView(APIView):
 
     @extend_schema(tags=['Operator Admins'], responses={200: None})
     def patch(self, request, pickup_id):
-        try:
-            pickup = PickupRequest.objects.select_for_update().get(
-                id=pickup_id, pickup_type='ON_DEMAND'
-            )
-        except PickupRequest.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Pickup request not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        if pickup.status != 'PENDING':
-            return Response(
-                {
-                    "success": False,
-                    "message": f"Cannot accept a pickup request with status '{pickup.status}'. Only PENDING requests can be accepted.",
-                },
-                status=status.HTTP_409_CONFLICT
-            )
-
         with transaction.atomic():
+            try:
+                pickup = PickupRequest.objects.select_for_update().get(
+                    id=pickup_id, pickup_type='ON_DEMAND'
+                )
+            except PickupRequest.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Pickup request not found."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            if pickup.status != 'PENDING':
+                return Response(
+                    {
+                        "success": False,
+                        "message": f"Cannot accept a pickup request with status '{pickup.status}'. Only PENDING requests can be accepted.",
+                    },
+                    status=status.HTTP_409_CONFLICT
+                )
+
             pickup.status = 'ACCEPTED'
             pickup.accepted_by = request.user
             pickup.accepted_at = timezone.now()
@@ -447,26 +447,26 @@ class OperatorAdminPickupRejectView(APIView):
         serializer = RejectPickupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        try:
-            pickup = PickupRequest.objects.select_for_update().get(
-                id=pickup_id, pickup_type='ON_DEMAND'
-            )
-        except PickupRequest.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Pickup request not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        if pickup.status != 'PENDING':
-            return Response(
-                {
-                    "success": False,
-                    "message": f"Cannot reject a pickup request with status '{pickup.status}'. Only PENDING requests can be rejected.",
-                },
-                status=status.HTTP_409_CONFLICT
-            )
-
         with transaction.atomic():
+            try:
+                pickup = PickupRequest.objects.select_for_update().get(
+                    id=pickup_id, pickup_type='ON_DEMAND'
+                )
+            except PickupRequest.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Pickup request not found."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            if pickup.status != 'PENDING':
+                return Response(
+                    {
+                        "success": False,
+                        "message": f"Cannot reject a pickup request with status '{pickup.status}'. Only PENDING requests can be rejected.",
+                    },
+                    status=status.HTTP_409_CONFLICT
+                )
+
             pickup.status = 'REJECTED'
             pickup.rejected_by = request.user
             pickup.rejected_at = timezone.now()
@@ -497,59 +497,59 @@ class OperatorAdminPickupAssignView(APIView):
 
         operator_id = serializer.validated_data['operator_id']
 
-        try:
-            pickup = PickupRequest.objects.select_for_update().get(
-                id=pickup_id, pickup_type='ON_DEMAND'
-            )
-        except PickupRequest.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Pickup request not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        if pickup.status != 'ACCEPTED':
-            return Response(
-                {
-                    "success": False,
-                    "message": f"Cannot assign an operator to a pickup request with status '{pickup.status}'. Only ACCEPTED requests can have operators assigned.",
-                },
-                status=status.HTTP_409_CONFLICT
-            )
-
-        try:
-            operator_user = CustomUser.objects.get(id=operator_id)
-        except CustomUser.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Operator not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        if operator_user.base_role != 'operator':
-            return Response(
-                {"success": False, "message": "The selected user is not an operator."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if not operator_user.is_active:
-            return Response(
-                {"success": False, "message": "The selected operator is not active."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            operator_profile = operator_user.operator_profile
-            if not operator_profile.is_verified:
+        with transaction.atomic():
+            try:
+                pickup = PickupRequest.objects.select_for_update().get(
+                    id=pickup_id, pickup_type='ON_DEMAND'
+                )
+            except PickupRequest.DoesNotExist:
                 return Response(
-                    {"success": False, "message": "The selected operator is not verified."},
+                    {"success": False, "message": "Pickup request not found."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            if pickup.status != 'ACCEPTED':
+                return Response(
+                    {
+                        "success": False,
+                        "message": f"Cannot assign an operator to a pickup request with status '{pickup.status}'. Only ACCEPTED requests can have operators assigned.",
+                    },
+                    status=status.HTTP_409_CONFLICT
+                )
+
+            try:
+                operator_user = CustomUser.objects.get(id=operator_id)
+            except CustomUser.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Operator not found."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            if operator_user.base_role != 'operator':
+                return Response(
+                    {"success": False, "message": "The selected user is not an operator."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-        except OperatorProfile.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Operator profile not found."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
-        with transaction.atomic():
+            if not operator_user.is_active:
+                return Response(
+                    {"success": False, "message": "The selected operator is not active."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                operator_profile = operator_user.operator_profile
+                if not operator_profile.is_verified:
+                    return Response(
+                        {"success": False, "message": "The selected operator is not verified."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            except OperatorProfile.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Operator profile not found."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             pickup.status = 'ASSIGNED'
             pickup.assigned_operator = operator_user
             pickup.assigned_by = request.user
