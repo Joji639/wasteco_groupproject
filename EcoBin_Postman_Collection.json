@@ -152,7 +152,7 @@
               "mode": "raw",
               "raw": "{\n  \"email\": \"ecobinadmin@gmail.com\",\n  \"password\": \"ecobin@2026!\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/superadmins/login/", "host": ["{{baseUrl}}"], "path": ["api", "superadmins", "login", ""] }
+            "url": { "raw": "{{baseUrl}}/superadmins/login/", "host": ["{{baseUrl}}"], "path": ["superadmins", "login", ""] }
           }
         },
         {
@@ -195,7 +195,7 @@
           "name": "Swagger Docs",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/docs/", "host": ["{{baseUrl}}"], "path": ["api", "docs", ""] }
+            "url": { "raw": "{{baseUrl}}/docs/", "host": ["{{baseUrl}}"], "path": ["docs", ""] }
           }
         }
       ]
@@ -217,7 +217,7 @@
                 { "key": "pin", "value": "695001", "type": "text" }
               ]
             },
-            "url": { "raw": "{{baseUrl}}/api/users/onboarding/", "host": ["{{baseUrl}}"], "path": ["api", "users", "onboarding", ""] }
+            "url": { "raw": "{{baseUrl}}/users/onboarding/", "host": ["{{baseUrl}}"], "path": ["users", "onboarding", ""] }
           }
         },
         {
@@ -232,7 +232,7 @@
               "mode": "raw",
               "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/users/logout/", "host": ["{{baseUrl}}"], "path": ["api", "users", "logout", ""] }
+            "url": { "raw": "{{baseUrl}}/users/logout/", "host": ["{{baseUrl}}"], "path": ["users", "logout", ""] }
           }
         },
         {
@@ -240,7 +240,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/users/account-info/", "host": ["{{baseUrl}}"], "path": ["api", "users", "account-info", ""] }
+            "url": { "raw": "{{baseUrl}}/users/account-info/", "host": ["{{baseUrl}}"], "path": ["users", "account-info", ""] }
           }
         },
         {
@@ -255,7 +255,7 @@
               "mode": "raw",
               "raw": "{\n  \"username\": \"user1_updated\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/users/account-info/", "host": ["{{baseUrl}}"], "path": ["api", "users", "account-info", ""] }
+            "url": { "raw": "{{baseUrl}}/users/account-info/", "host": ["{{baseUrl}}"], "path": ["users", "account-info", ""] }
           }
         },
         {
@@ -263,7 +263,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/users/personal-info/", "host": ["{{baseUrl}}"], "path": ["api", "users", "personal-info", ""] }
+            "url": { "raw": "{{baseUrl}}/users/personal-info/", "host": ["{{baseUrl}}"], "path": ["users", "personal-info", ""] }
           }
         },
         {
@@ -278,7 +278,7 @@
                 { "key": "ward_no", "value": "2", "type": "text" }
               ]
             },
-            "url": { "raw": "{{baseUrl}}/api/users/personal-info/", "host": ["{{baseUrl}}"], "path": ["api", "users", "personal-info", ""] }
+            "url": { "raw": "{{baseUrl}}/users/personal-info/", "host": ["{{baseUrl}}"], "path": ["users", "personal-info", ""] }
           }
         },
         {
@@ -293,7 +293,7 @@
               "mode": "raw",
               "raw": "{\n  \"old_password\": \"Test123!\",\n  \"new_password\": \"Test1234!\",\n  \"confirm_new_password\": \"Test1234!\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/users/change-password/", "host": ["{{baseUrl}}"], "path": ["api", "users", "change-password", ""] }
+            "url": { "raw": "{{baseUrl}}/users/change-password/", "host": ["{{baseUrl}}"], "path": ["users", "change-password", ""] }
           }
         },
         {
@@ -319,7 +319,7 @@
               "mode": "raw",
               "raw": "{\n  \"pickup_type\": \"ON_DEMAND\",\n  \"place\": \"MG Road, Thiruvananthapuram\",\n  \"latitude\": 8.5241,\n  \"longitude\": 76.9366,\n  \"description\": \"Mixed household waste - 3 bags\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/users/pickups/", "host": ["{{baseUrl}}"], "path": ["api", "users", "pickups", ""] }
+            "url": { "raw": "{{baseUrl}}/users/pickups/", "host": ["{{baseUrl}}"], "path": ["users", "pickups", ""] }
           }
         },
         {
@@ -334,7 +334,7 @@
               "mode": "raw",
               "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Excellent service! Very professional.\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/users/pickups/{{pickupId}}/review/", "host": ["{{baseUrl}}"], "path": ["api", "users", "pickups", "{{pickupId}}", "review", ""] }
+            "url": { "raw": "{{baseUrl}}/users/pickups/{{pickupId}}/review/", "host": ["{{baseUrl}}"], "path": ["users", "pickups", "{{pickupId}}", "review", ""] }
           }
         },
         {
@@ -342,7 +342,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/users/pickups/{{pickupId}}/review/detail/", "host": ["{{baseUrl}}"], "path": ["api", "users", "pickups", "{{pickupId}}", "review", "detail", ""] }
+            "url": { "raw": "{{baseUrl}}/users/pickups/{{pickupId}}/review/detail/", "host": ["{{baseUrl}}"], "path": ["users", "pickups", "{{pickupId}}", "review", "detail", ""] }
           }
         },
         {
@@ -368,7 +368,7 @@
               "mode": "raw",
               "raw": "{\n  \"place\": \"MG Road, Thiruvananthapuram\",\n  \"latitude\": 8.5241,\n  \"longitude\": 76.9366,\n  \"description\": \"Waste not collected on scheduled day\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/user/complaints/", "host": ["{{baseUrl}}"], "path": ["api", "user", "complaints", ""] }
+            "url": { "raw": "{{baseUrl}}/user/complaints/", "host": ["{{baseUrl}}"], "path": ["user", "complaints", ""] }
           }
         },
         {
@@ -376,7 +376,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/user/complaints/list/", "host": ["{{baseUrl}}"], "path": ["api", "user", "complaints", "list", ""] }
+            "url": { "raw": "{{baseUrl}}/user/complaints/list/", "host": ["{{baseUrl}}"], "path": ["user", "complaints", "list", ""] }
           }
         },
         {
@@ -384,7 +384,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/user/complaints/{{complaintId}}/", "host": ["{{baseUrl}}"], "path": ["api", "user", "complaints", "{{complaintId}}", ""] }
+            "url": { "raw": "{{baseUrl}}/user/complaints/{{complaintId}}/", "host": ["{{baseUrl}}"], "path": ["user", "complaints", "{{complaintId}}", ""] }
           }
         },
         {
@@ -392,7 +392,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/payments/user/pickups/{{pickupId}}/payment/status/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "user", "pickups", "{{pickupId}}", "payment", "status", ""] }
+            "url": { "raw": "{{baseUrl}}/payments/user/pickups/{{pickupId}}/payment/status/", "host": ["{{baseUrl}}"], "path": ["payments", "user", "pickups", "{{pickupId}}", "payment", "status", ""] }
           }
         }
       ]
@@ -405,7 +405,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operators/onboarding/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "onboarding", ""] }
+            "url": { "raw": "{{baseUrl}}/operators/onboarding/", "host": ["{{baseUrl}}"], "path": ["operators", "onboarding", ""] }
           }
         },
         {
@@ -421,7 +421,7 @@
                 { "key": "panchayath", "value": "TVM Corporation", "type": "text" }
               ]
             },
-            "url": { "raw": "{{baseUrl}}/api/operators/onboarding/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "onboarding", ""] }
+            "url": { "raw": "{{baseUrl}}/operators/onboarding/", "host": ["{{baseUrl}}"], "path": ["operators", "onboarding", ""] }
           }
         },
         {
@@ -435,7 +435,7 @@
                 { "key": "address", "value": "789 Updated Lane, TVM", "type": "text" }
               ]
             },
-            "url": { "raw": "{{baseUrl}}/api/operators/onboarding/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "onboarding", ""] }
+            "url": { "raw": "{{baseUrl}}/operators/onboarding/", "host": ["{{baseUrl}}"], "path": ["operators", "onboarding", ""] }
           }
         },
         {
@@ -443,7 +443,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operators/account-info/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "account-info", ""] }
+            "url": { "raw": "{{baseUrl}}/operators/account-info/", "host": ["{{baseUrl}}"], "path": ["operators", "account-info", ""] }
           }
         },
         {
@@ -458,7 +458,7 @@
               "mode": "raw",
               "raw": "{\n  \"phone\": \"9876543999\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operators/account-info/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "account-info", ""] }
+            "url": { "raw": "{{baseUrl}}/operators/account-info/", "host": ["{{baseUrl}}"], "path": ["operators", "account-info", ""] }
           }
         },
         {
@@ -466,7 +466,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operators/personal-info/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "personal-info", ""] }
+            "url": { "raw": "{{baseUrl}}/operators/personal-info/", "host": ["{{baseUrl}}"], "path": ["operators", "personal-info", ""] }
           }
         },
         {
@@ -480,7 +480,7 @@
                 { "key": "address", "value": "789 New Address, TVM", "type": "text" }
               ]
             },
-            "url": { "raw": "{{baseUrl}}/api/operators/personal-info/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "personal-info", ""] }
+            "url": { "raw": "{{baseUrl}}/operators/personal-info/", "host": ["{{baseUrl}}"], "path": ["operators", "personal-info", ""] }
           }
         },
         {
@@ -495,7 +495,7 @@
               "mode": "raw",
               "raw": "{\n  \"old_password\": \"Test123!\",\n  \"new_password\": \"Test1234!\",\n  \"confirm_new_password\": \"Test1234!\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operators/change-password/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "change-password", ""] }
+            "url": { "raw": "{{baseUrl}}/operators/change-password/", "host": ["{{baseUrl}}"], "path": ["operators", "change-password", ""] }
           }
         },
         {
@@ -510,7 +510,7 @@
               "mode": "raw",
               "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operators/logout/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "logout", ""] }
+            "url": { "raw": "{{baseUrl}}/operators/logout/", "host": ["{{baseUrl}}"], "path": ["operators", "logout", ""] }
           }
         },
         {
@@ -518,7 +518,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operators/reviews/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "reviews", ""] }
+            "url": { "raw": "{{baseUrl}}/operators/reviews/", "host": ["{{baseUrl}}"], "path": ["operators", "reviews", ""] }
           }
         },
         {
@@ -526,7 +526,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operators/reviews/summary/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "reviews", "summary", ""] }
+            "url": { "raw": "{{baseUrl}}/operators/reviews/summary/", "host": ["{{baseUrl}}"], "path": ["operators", "reviews", "summary", ""] }
           }
         },
         {
@@ -541,7 +541,7 @@
               "mode": "raw",
               "raw": "{\n  \"latitude\": 8.5241,\n  \"longitude\": 76.9366\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operators/location/update/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "location", "update", ""] }
+            "url": { "raw": "{{baseUrl}}/operators/location/update/", "host": ["{{baseUrl}}"], "path": ["operators", "location", "update", ""] }
           }
         },
         {
@@ -549,7 +549,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operators/location/{{pickupId}}/", "host": ["{{baseUrl}}"], "path": ["api", "operators", "location", "{{pickupId}}", ""] }
+            "url": { "raw": "{{baseUrl}}/operators/location/{{pickupId}}/", "host": ["{{baseUrl}}"], "path": ["operators", "location", "{{pickupId}}", ""] }
           }
         },
         {
@@ -557,7 +557,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/payments/operator/assigned-pickups/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "operator", "assigned-pickups", ""] }
+            "url": { "raw": "{{baseUrl}}/payments/operator/assigned-pickups/", "host": ["{{baseUrl}}"], "path": ["payments", "operator", "assigned-pickups", ""] }
           }
         },
         {
@@ -565,7 +565,7 @@
           "request": {
             "method": "PATCH",
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/payments/operator/pickups/{{pickupId}}/start/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "operator", "pickups", "{{pickupId}}", "start", ""] }
+            "url": { "raw": "{{baseUrl}}/payments/operator/pickups/{{pickupId}}/start/", "host": ["{{baseUrl}}"], "path": ["payments", "operator", "pickups", "{{pickupId}}", "start", ""] }
           }
         },
         {
@@ -573,7 +573,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/payments/operator/collections/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "operator", "collections", ""] }
+            "url": { "raw": "{{baseUrl}}/payments/operator/collections/", "host": ["{{baseUrl}}"], "path": ["payments", "operator", "collections", ""] }
           }
         },
         {
@@ -599,7 +599,7 @@
               "mode": "raw",
               "raw": "{\n  \"pickup_request\": \"{{pickupId}}\",\n  \"plastic_kg\": 5.5,\n  \"e_waste_kg\": 2.0,\n  \"payment_method\": \"CASH\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/payments/operator/collections/create/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "operator", "collections", "create", ""] }
+            "url": { "raw": "{{baseUrl}}/payments/operator/collections/create/", "host": ["{{baseUrl}}"], "path": ["payments", "operator", "collections", "create", ""] }
           }
         },
         {
@@ -607,7 +607,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/payments/operator/collections/{{collectionId}}/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "operator", "collections", "{{collectionId}}", ""] }
+            "url": { "raw": "{{baseUrl}}/payments/operator/collections/{{collectionId}}/", "host": ["{{baseUrl}}"], "path": ["payments", "operator", "collections", "{{collectionId}}", ""] }
           }
         },
         {
@@ -618,7 +618,7 @@
               { "key": "Authorization", "value": "Bearer {{operatorToken}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "url": { "raw": "{{baseUrl}}/api/payments/operator/collections/{{collectionId}}/payment/", "host": ["{{baseUrl}}"], "path": ["api", "payments", "operator", "collections", "{{collectionId}}", "payment", ""] }
+            "url": { "raw": "{{baseUrl}}/payments/operator/collections/{{collectionId}}/payment/", "host": ["{{baseUrl}}"], "path": ["payments", "operator", "collections", "{{collectionId}}", "payment", ""] }
           }
         },
         {
@@ -626,7 +626,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operator/complaints/", "host": ["{{baseUrl}}"], "path": ["api", "operator", "complaints", ""] }
+            "url": { "raw": "{{baseUrl}}/operator/complaints/", "host": ["{{baseUrl}}"], "path": ["operator", "complaints", ""] }
           }
         },
         {
@@ -634,7 +634,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{operatorToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operator/complaints/{{complaintId}}/", "host": ["{{baseUrl}}"], "path": ["api", "operator", "complaints", "{{complaintId}}", ""] }
+            "url": { "raw": "{{baseUrl}}/operator/complaints/{{complaintId}}/", "host": ["{{baseUrl}}"], "path": ["operator", "complaints", "{{complaintId}}", ""] }
           }
         },
         {
@@ -649,7 +649,7 @@
               "mode": "raw",
               "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operator/complaints/{{complaintId}}/status/", "host": ["{{baseUrl}}"], "path": ["api", "operator", "complaints", "{{complaintId}}", "status", ""] }
+            "url": { "raw": "{{baseUrl}}/operator/complaints/{{complaintId}}/status/", "host": ["{{baseUrl}}"], "path": ["operator", "complaints", "{{complaintId}}", "status", ""] }
           }
         }
       ]
@@ -662,7 +662,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operator-admins/onboardings/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "onboardings", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admins/onboardings/", "host": ["{{baseUrl}}"], "path": ["operator-admins", "onboardings", ""] }
           }
         },
         {
@@ -677,7 +677,7 @@
               "mode": "raw",
               "raw": "{\n  \"operator_id\": \"OP-9C2A4306\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operator-admins/onboardings/approve/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "onboardings", "approve", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admins/onboardings/approve/", "host": ["{{baseUrl}}"], "path": ["operator-admins", "onboardings", "approve", ""] }
           }
         },
         {
@@ -692,7 +692,7 @@
               "mode": "raw",
               "raw": "{\n  \"operator_id\": \"OP-9C2A4306\",\n  \"reason\": \"Documents incomplete\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operator-admins/onboardings/reject/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "onboardings", "reject", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admins/onboardings/reject/", "host": ["{{baseUrl}}"], "path": ["operator-admins", "onboardings", "reject", ""] }
           }
         },
         {
@@ -700,7 +700,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operator-admins/user-onboardings/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "user-onboardings", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admins/user-onboardings/", "host": ["{{baseUrl}}"], "path": ["operator-admins", "user-onboardings", ""] }
           }
         },
         {
@@ -715,7 +715,7 @@
               "mode": "raw",
               "raw": "{\n  \"user_id\": \"bb234aaf-3d25-41a1-bacb-d73ec866e3c1\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operator-admins/user-onboardings/approve/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "user-onboardings", "approve", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admins/user-onboardings/approve/", "host": ["{{baseUrl}}"], "path": ["operator-admins", "user-onboardings", "approve", ""] }
           }
         },
         {
@@ -730,7 +730,7 @@
               "mode": "raw",
               "raw": "{\n  \"user_id\": \"bb234aaf-3d25-41a1-bacb-d73ec866e3c1\",\n  \"reason\": \"Invalid documents\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operator-admins/user-onboardings/reject/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "user-onboardings", "reject", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admins/user-onboardings/reject/", "host": ["{{baseUrl}}"], "path": ["operator-admins", "user-onboardings", "reject", ""] }
           }
         },
         {
@@ -738,7 +738,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operator-admins/pickups/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "pickups", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admins/pickups/", "host": ["{{baseUrl}}"], "path": ["operator-admins", "pickups", ""] }
           }
         },
         {
@@ -746,7 +746,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operator-admins/pickups/{{pickupId}}/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "pickups", "{{pickupId}}", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admins/pickups/{{pickupId}}/", "host": ["{{baseUrl}}"], "path": ["operator-admins", "pickups", "{{pickupId}}", ""] }
           }
         },
         {
@@ -754,7 +754,7 @@
           "request": {
             "method": "PATCH",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operator-admins/pickups/{{pickupId}}/accept/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "pickups", "{{pickupId}}", "accept", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admins/pickups/{{pickupId}}/accept/", "host": ["{{baseUrl}}"], "path": ["operator-admins", "pickups", "{{pickupId}}", "accept", ""] }
           }
         },
         {
@@ -769,7 +769,7 @@
               "mode": "raw",
               "raw": "{\n  \"reason\": \"Cannot handle this type of waste\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operator-admins/pickups/{{pickupId}}/reject/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "pickups", "{{pickupId}}", "reject", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admins/pickups/{{pickupId}}/reject/", "host": ["{{baseUrl}}"], "path": ["operator-admins", "pickups", "{{pickupId}}", "reject", ""] }
           }
         },
         {
@@ -784,7 +784,7 @@
               "mode": "raw",
               "raw": "{\n  \"operator_id\": \"OP-9C2A4306\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operator-admins/pickups/{{pickupId}}/assign-operator/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "pickups", "{{pickupId}}", "assign-operator", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admins/pickups/{{pickupId}}/assign-operator/", "host": ["{{baseUrl}}"], "path": ["operator-admins", "pickups", "{{pickupId}}", "assign-operator", ""] }
           }
         },
         {
@@ -792,7 +792,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operator-admins/operators/ratings/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "operators", "ratings", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admins/operators/ratings/", "host": ["{{baseUrl}}"], "path": ["operator-admins", "operators", "ratings", ""] }
           }
         },
         {
@@ -800,7 +800,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operator-admins/operators/{{operatorId}}/reviews/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admins", "operators", "{{operatorId}}", "reviews", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admins/operators/{{operatorId}}/reviews/", "host": ["{{baseUrl}}"], "path": ["operator-admins", "operators", "{{operatorId}}", "reviews", ""] }
           }
         },
         {
@@ -808,7 +808,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operator-admin/complaints/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "complaints", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admin/complaints/", "host": ["{{baseUrl}}"], "path": ["operator-admin", "complaints", ""] }
           }
         },
         {
@@ -816,7 +816,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operator-admin/complaints/{{complaintId}}/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "complaints", "{{complaintId}}", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admin/complaints/{{complaintId}}/", "host": ["{{baseUrl}}"], "path": ["operator-admin", "complaints", "{{complaintId}}", ""] }
           }
         },
         {
@@ -831,7 +831,7 @@
               "mode": "raw",
               "raw": "{\n  \"operator_id\": \"OP-9C2A4306\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operator-admin/complaints/{{complaintId}}/assign/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "complaints", "{{complaintId}}", "assign", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admin/complaints/{{complaintId}}/assign/", "host": ["{{baseUrl}}"], "path": ["operator-admin", "complaints", "{{complaintId}}", "assign", ""] }
           }
         },
         {
@@ -857,7 +857,7 @@
               "mode": "raw",
               "raw": "{\n  \"name\": \"New Test Community\",\n  \"description\": \"Test community group\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operator-admin/communities/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "communities", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admin/communities/", "host": ["{{baseUrl}}"], "path": ["operator-admin", "communities", ""] }
           }
         },
         {
@@ -872,7 +872,7 @@
               "mode": "raw",
               "raw": "{\n  \"name\": \"Updated Community Name\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operator-admin/communities/{{communityId}}/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "communities", "{{communityId}}", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admin/communities/{{communityId}}/", "host": ["{{baseUrl}}"], "path": ["operator-admin", "communities", "{{communityId}}", ""] }
           }
         },
         {
@@ -880,7 +880,7 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operator-admin/communities/{{communityId}}/deactivate/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "communities", "{{communityId}}", "deactivate", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admin/communities/{{communityId}}/deactivate/", "host": ["{{baseUrl}}"], "path": ["operator-admin", "communities", "{{communityId}}", "deactivate", ""] }
           }
         },
         {
@@ -888,7 +888,7 @@
           "request": {
             "method": "DELETE",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/operator-admin/communities/{{communityId}}/members/1/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "communities", "{{communityId}}", "members", "1", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admin/communities/{{communityId}}/members/1/", "host": ["{{baseUrl}}"], "path": ["operator-admin", "communities", "{{communityId}}", "members", "1", ""] }
           }
         },
         {
@@ -903,7 +903,7 @@
               "mode": "raw",
               "raw": "{\n  \"can_add_members\": true\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/operator-admin/communities/{{communityId}}/members/1/permissions/", "host": ["{{baseUrl}}"], "path": ["api", "operator-admin", "communities", "{{communityId}}", "members", "1", "permissions", ""] }
+            "url": { "raw": "{{baseUrl}}/operator-admin/communities/{{communityId}}/members/1/permissions/", "host": ["{{baseUrl}}"], "path": ["operator-admin", "communities", "{{communityId}}", "members", "1", "permissions", ""] }
           }
         }
       ]
@@ -916,7 +916,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/communities/", "host": ["{{baseUrl}}"], "path": ["api", "communities", ""] }
+            "url": { "raw": "{{baseUrl}}/communities/", "host": ["{{baseUrl}}"], "path": ["communities", ""] }
           }
         },
         {
@@ -924,7 +924,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/communities/{{communityId}}/", "host": ["{{baseUrl}}"], "path": ["api", "communities", "{{communityId}}", ""] }
+            "url": { "raw": "{{baseUrl}}/communities/{{communityId}}/", "host": ["{{baseUrl}}"], "path": ["communities", "{{communityId}}", ""] }
           }
         },
         {
@@ -932,7 +932,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/communities/{{communityId}}/members/", "host": ["{{baseUrl}}"], "path": ["api", "communities", "{{communityId}}", "members", ""] }
+            "url": { "raw": "{{baseUrl}}/communities/{{communityId}}/members/", "host": ["{{baseUrl}}"], "path": ["communities", "{{communityId}}", "members", ""] }
           }
         },
         {
@@ -947,7 +947,7 @@
               "mode": "raw",
               "raw": "{\n  \"user_id\": \"6812f988-2f80-4dc8-a65f-b75c2a9ab362\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/communities/{{communityId}}/members/add/", "host": ["{{baseUrl}}"], "path": ["api", "communities", "{{communityId}}", "members", "add", ""] }
+            "url": { "raw": "{{baseUrl}}/communities/{{communityId}}/members/add/", "host": ["{{baseUrl}}"], "path": ["communities", "{{communityId}}", "members", "add", ""] }
           }
         },
         {
@@ -955,7 +955,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{oaToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/communities/{{communityId}}/messages/", "host": ["{{baseUrl}}"], "path": ["api", "communities", "{{communityId}}", "messages", ""] }
+            "url": { "raw": "{{baseUrl}}/communities/{{communityId}}/messages/", "host": ["{{baseUrl}}"], "path": ["communities", "{{communityId}}", "messages", ""] }
           }
         }
       ]
@@ -968,7 +968,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{saToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/superadmins/users/", "host": ["{{baseUrl}}"], "path": ["api", "superadmins", "users", ""] }
+            "url": { "raw": "{{baseUrl}}/superadmins/users/", "host": ["{{baseUrl}}"], "path": ["superadmins", "users", ""] }
           }
         },
         {
@@ -976,7 +976,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{saToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/superadmins/operators/", "host": ["{{baseUrl}}"], "path": ["api", "superadmins", "operators", ""] }
+            "url": { "raw": "{{baseUrl}}/superadmins/operators/", "host": ["{{baseUrl}}"], "path": ["superadmins", "operators", ""] }
           }
         },
         {
@@ -984,7 +984,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{saToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/superadmins/operator-admins/", "host": ["{{baseUrl}}"], "path": ["api", "superadmins", "operator-admins", ""] }
+            "url": { "raw": "{{baseUrl}}/superadmins/operator-admins/", "host": ["{{baseUrl}}"], "path": ["superadmins", "operator-admins", ""] }
           }
         },
         {
@@ -992,7 +992,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{saToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/superadmins/onboardings/", "host": ["{{baseUrl}}"], "path": ["api", "superadmins", "onboardings", ""] }
+            "url": { "raw": "{{baseUrl}}/superadmins/onboardings/", "host": ["{{baseUrl}}"], "path": ["superadmins", "onboardings", ""] }
           }
         },
         {
@@ -1000,7 +1000,7 @@
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{saToken}}" }],
-            "url": { "raw": "{{baseUrl}}/api/superadmins/operators/ratings/", "host": ["{{baseUrl}}"], "path": ["api", "superadmins", "operators", "ratings", ""] }
+            "url": { "raw": "{{baseUrl}}/superadmins/operators/ratings/", "host": ["{{baseUrl}}"], "path": ["superadmins", "operators", "ratings", ""] }
           }
         }
       ]
