@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import RegexValidator
-from .models import CustomUser, UserProfile, OperatorProfile, OperatorAdminProfile, OperatorOnboarding
+from .models import CustomUser, UserProfile, OperatorProfile, OperatorAdminProfile, OperatorOnboarding, OperatorAdminOnboarding
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
@@ -290,6 +290,9 @@ class OperatorOnboardingSerializer(serializers.ModelSerializer):
             message='Aadhaar must be exactly 12 digits.'
         )]
     )
+    photo = serializers.ImageField(required=False, allow_null=True)
+    pan_image = serializers.ImageField(required=False, allow_null=True)
+    aadhaar_image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = OperatorOnboarding
@@ -485,4 +488,69 @@ class AdminStaffListSerializer(serializers.ModelSerializer):
 
     def get_onboarding_status(self, obj):
         return staff_onboarding_status(obj)
+
+
+class OperatorAdminOnboardingSerializer(serializers.ModelSerializer):
+    photo = serializers.ImageField(required=False, allow_null=True)
+    pan_image = serializers.ImageField(required=False, allow_null=True)
+    aadhaar_image = serializers.ImageField(required=False, allow_null=True)
+    pan_number = serializers.CharField(
+        validators=[RegexValidator(
+            regex=r'^[A-Z]{5}[0-9]{4}[A-Z]$',
+            message='Enter a valid PAN number (e.g. ABCDE1234F).'
+        )]
+    )
+    aadhaar_number = serializers.CharField(
+        validators=[RegexValidator(
+            regex=r'^\d{12}$',
+            message='Aadhaar must be exactly 12 digits.'
+        )]
+    )
+
+    class Meta:
+        model = OperatorAdminOnboarding
+        fields = [
+            'id', 'user', 'photo', 'pan_number', 'pan_image',
+            'aadhaar_number', 'aadhaar_image', 'approved', 'approved_by',
+            'approved_at', 'rejection_reason', 'created_at', 'updated_at',
+        ]
+        read_only_fields = [
+            'id', 'user', 'approved', 'approved_by',
+            'approved_at', 'rejection_reason', 'created_at', 'updated_at',
+        ]
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        if instance.approved:
+            instance.approved = False
+            instance.approved_at = None
+            instance.approved_by = None
+            instance.rejection_reason = ''
+            instance.save(update_fields=[
+                'approved', 'approved_at', 'approved_by', 'rejection_reason', 'updated_at'
+            ])
+            profile = instance.user.operatoradmin_profile
+            profile.is_verified = False
+            profile.save(update_fields=['is_verified'])
+        return instance
+
+
+class OperatorAdminOnboardingAdminSerializer(OperatorAdminOnboardingSerializer):
+    account = serializers.SerializerMethodField()
+    role = serializers.CharField(source='user.base_role', read_only=True)
+
+    class Meta(OperatorAdminOnboardingSerializer.Meta):
+        fields = OperatorAdminOnboardingSerializer.Meta.fields + ['account', 'role']
+        read_only_fields = OperatorAdminOnboardingSerializer.Meta.read_only_fields + ['role']
+
+    def get_account(self, obj):
+        return {
+            'username': obj.user.username,
+            'email': obj.user.email,
+            'phone': str(obj.user.phone) if obj.user.phone else None,
+        }
 

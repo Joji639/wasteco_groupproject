@@ -8,10 +8,11 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.models import UserProfile, OperatorOnboarding, CustomUser, OperatorProfile
+from accounts.models import UserProfile, OperatorOnboarding, CustomUser, OperatorProfile, OperatorAdminOnboarding
 from accounts.serializers import (
     OperatorOnboardingAdminSerializer, OperatorPersonalInfoSerializer,
     RejectOnboardingSerializer, AdminUserOnboardingSerializer,
+    OperatorAdminOnboardingSerializer, OperatorAdminOnboardingAdminSerializer,
     set_staff_verified,
 )
 from accounts.permissions import IsOperatorAdminOrSuperAdmin, _in_group
@@ -679,4 +680,113 @@ class OperatorAdminOperatorReviewsView(APIView):
                 },
             },
             status=status.HTTP_200_OK,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Operator Admin Onboarding (self-service, approved by superadmin)
+# ---------------------------------------------------------------------------
+
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
+
+class OperatorAdminOnboardingView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        responses={200: OperatorAdminOnboardingSerializer}
+    )
+    def get(self, request):
+        if request.user.base_role != 'operatoradmin':
+            return Response(
+                {"success": False, "message": "Only operator admins can access this"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        try:
+            onboarding = request.user.operatoradmin_onboarding
+        except OperatorAdminOnboarding.DoesNotExist:
+            return Response(
+                {"success": True, "data": None, "message": "No onboarding submitted yet"},
+                status=status.HTTP_200_OK
+            )
+        serializer = OperatorAdminOnboardingSerializer(onboarding)
+        return Response(
+            {"success": True, "data": serializer.data},
+            status=status.HTTP_200_OK
+        )
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        request=OperatorAdminOnboardingSerializer,
+        responses={201: OperatorAdminOnboardingSerializer},
+        consumes=[OpenApiTypes.BINARY, OpenApiTypes.MULTIPART]
+    )
+    def post(self, request):
+        if request.user.base_role != 'operatoradmin':
+            return Response(
+                {"success": False, "message": "Only operator admins can access this"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        if OperatorAdminOnboarding.objects.filter(user=request.user).exists():
+            return Response(
+                {"success": False, "message": "Onboarding already submitted. Use PATCH to update."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        serializer = OperatorAdminOnboardingSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        try:
+            onboarding = serializer.save()
+        except Exception as e:
+            return Response(
+                {"success": False, "message": "Failed to submit onboarding", "errors": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(
+            {
+                "success": True,
+                "message": "Onboarding submitted. Awaiting superadmin approval.",
+                "data": OperatorAdminOnboardingSerializer(onboarding).data,
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        request=OperatorAdminOnboardingSerializer,
+        responses={200: OperatorAdminOnboardingSerializer},
+        consumes=[OpenApiTypes.BINARY, OpenApiTypes.MULTIPART]
+    )
+    def patch(self, request):
+        if request.user.base_role != 'operatoradmin':
+            return Response(
+                {"success": False, "message": "Only operator admins can access this"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        try:
+            onboarding = request.user.operatoradmin_onboarding
+        except OperatorAdminOnboarding.DoesNotExist:
+            return Response(
+                {"success": False, "message": "No onboarding submitted yet. Use POST first."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = OperatorAdminOnboardingSerializer(
+            onboarding, data=request.data, partial=True, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        try:
+            onboarding = serializer.save()
+        except Exception as e:
+            return Response(
+                {"success": False, "message": "Failed to update onboarding", "errors": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(
+            {
+                "success": True,
+                "message": "Onboarding updated. Awaiting superadmin approval.",
+                "data": OperatorAdminOnboardingSerializer(onboarding).data,
+            },
+            status=status.HTTP_200_OK
         )

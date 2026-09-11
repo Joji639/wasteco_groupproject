@@ -166,3 +166,34 @@ class OperatorOnboarding(models.Model):
 
     def __str__(self):
         return f"Onboarding: {self.user.email} (approved={self.approved})"
+
+
+class OperatorAdminOnboarding(models.Model):
+    user = models.OneToOneField(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='operatoradmin_onboarding'
+    )
+
+    photo = CloudinaryField('photo', blank=True, null=True)
+    pan_number = models.CharField(max_length=10, blank=True)
+    pan_image = CloudinaryField('pan_image', blank=True, null=True)
+    aadhaar_number = models.CharField(max_length=12, blank=True)
+    aadhaar_image = CloudinaryField('aadhaar_image', blank=True, null=True)
+
+    approved = models.BooleanField(default=False)
+    approved_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approved_oa_onboardings'
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True, default='')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"OA Onboarding: {self.user.email} (approved={self.approved})"

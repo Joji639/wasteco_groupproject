@@ -7,6 +7,7 @@ from .views import (
     OperatorAdminPickupAcceptView, OperatorAdminPickupRejectView,
     OperatorAdminPickupAssignView,
     OperatorAdminOperatorRatingsView, OperatorAdminOperatorReviewsView,
+    OperatorAdminOnboardingView,
 )
 
 urlpatterns = [
@@ -30,4 +31,7 @@ urlpatterns = [
     # Operator ratings
     path('operators/ratings/', OperatorAdminOperatorRatingsView.as_view(), name='oa-operator-ratings'),
     path('operators/<uuid:operator_id>/reviews/', OperatorAdminOperatorReviewsView.as_view(), name='oa-operator-reviews'),
+
+    # Operator admin self onboarding
+    path('onboarding/', OperatorAdminOnboardingView.as_view(), name='oa-self-onboarding'),
 ]

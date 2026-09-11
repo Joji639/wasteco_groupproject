@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiTypes
 from django.db.models import Avg, Count, Q
 
 from accounts.models import OperatorOnboarding
@@ -35,7 +35,7 @@ class OperatorOnboardingView(APIView):
             status=status.HTTP_200_OK
         )
 
-    @extend_schema(tags=['Operators'], request=OperatorOnboardingSerializer, responses={201: OperatorOnboardingSerializer})
+    @extend_schema(tags=['Operators'], request=OperatorOnboardingSerializer, responses={201: OperatorOnboardingSerializer}, consumes=[OpenApiTypes.BINARY, OpenApiTypes.MULTIPART])
     def post(self, request):
         if OperatorOnboarding.objects.filter(user=request.user).exists():
             return Response(
@@ -63,7 +63,7 @@ class OperatorOnboardingView(APIView):
             status=status.HTTP_201_CREATED
         )
 
-    @extend_schema(tags=['Operators'], request=OperatorOnboardingSerializer, responses={200: OperatorOnboardingSerializer})
+    @extend_schema(tags=['Operators'], request=OperatorOnboardingSerializer, responses={200: OperatorOnboardingSerializer}, consumes=[OpenApiTypes.BINARY, OpenApiTypes.MULTIPART])
     def patch(self, request):
         try:
             onboarding = request.user.operator_onboarding
