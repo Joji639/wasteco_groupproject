@@ -35,7 +35,7 @@ class OperatorOnboardingView(APIView):
             status=status.HTTP_200_OK
         )
 
-    @extend_schema(tags=['Operators'], request=OperatorOnboardingSerializer, responses={201: OperatorOnboardingSerializer}, consumes=["multipart/form-data", "application/octet-stream"])
+    @extend_schema(tags=['Operators'], request=OperatorOnboardingSerializer, responses={201: OperatorOnboardingSerializer})
     def post(self, request):
         if OperatorOnboarding.objects.filter(user=request.user).exists():
             return Response(
@@ -63,7 +63,7 @@ class OperatorOnboardingView(APIView):
             status=status.HTTP_201_CREATED
         )
 
-    @extend_schema(tags=['Operators'], request=OperatorOnboardingSerializer, responses={200: OperatorOnboardingSerializer}, consumes=["multipart/form-data", "application/octet-stream"])
+    @extend_schema(tags=['Operators'], request=OperatorOnboardingSerializer, responses={200: OperatorOnboardingSerializer})
     def patch(self, request):
         try:
             onboarding = request.user.operator_onboarding

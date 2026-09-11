@@ -721,7 +721,6 @@ class OperatorAdminOnboardingView(APIView):
         tags=['Operator Admins'],
         request=OperatorAdminOnboardingSerializer,
         responses={201: OperatorAdminOnboardingSerializer},
-        consumes=["multipart/form-data", "application/octet-stream"]
     )
     def post(self, request):
         if request.user.base_role != 'operatoradmin':
@@ -756,7 +755,6 @@ class OperatorAdminOnboardingView(APIView):
         tags=['Operator Admins'],
         request=OperatorAdminOnboardingSerializer,
         responses={200: OperatorAdminOnboardingSerializer},
-        consumes=["multipart/form-data", "application/octet-stream"]
     )
     def patch(self, request):
         if request.user.base_role != 'operatoradmin':
