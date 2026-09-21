@@ -8,6 +8,11 @@ from .views import (
     OperatorAdminPickupAssignView,
     OperatorAdminOperatorRatingsView, OperatorAdminOperatorReviewsView,
     OperatorAdminOnboardingView,
+    ScheduledPickupCreateView, ScheduledPickupUpdateView,
+    ScheduledPickupDeleteView, ScheduledPickupListView,
+    AreaCreateView, AreaListView, AreaDeleteView,
+    AreaAssignOperatorView, AreaRemoveOperatorView, AreaAssignmentListView,
+    WasteCollectionReportView, WasteCollectionReportByOperatorView, WasteCollectionListView,
 )
 
 urlpatterns = [
@@ -34,4 +39,23 @@ urlpatterns = [
 
     # Operator admin self onboarding
     path('onboarding/', OperatorAdminOnboardingView.as_view(), name='oa-self-onboarding'),
+
+    # Scheduled pickups
+    path('scheduled-pickups/', ScheduledPickupListView.as_view(), name='oa-scheduled-pickup-list'),
+    path('scheduled-pickups/create/', ScheduledPickupCreateView.as_view(), name='oa-scheduled-pickup-create'),
+    path('scheduled-pickups/<uuid:pickup_id>/update/', ScheduledPickupUpdateView.as_view(), name='oa-scheduled-pickup-update'),
+    path('scheduled-pickups/<uuid:pickup_id>/delete/', ScheduledPickupDeleteView.as_view(), name='oa-scheduled-pickup-delete'),
+
+    # Area management
+    path('areas/', AreaListView.as_view(), name='oa-area-list'),
+    path('areas/create/', AreaCreateView.as_view(), name='oa-area-create'),
+    path('areas/<uuid:area_id>/delete/', AreaDeleteView.as_view(), name='oa-area-delete'),
+    path('areas/<uuid:area_id>/assignments/', AreaAssignmentListView.as_view(), name='oa-area-assignment-list'),
+    path('areas/<uuid:area_id>/assign-operator/', AreaAssignOperatorView.as_view(), name='oa-area-assign-operator'),
+    path('areas/<uuid:area_id>/assignments/<uuid:assignment_id>/remove/', AreaRemoveOperatorView.as_view(), name='oa-area-remove-operator'),
+
+    # Waste collection reports
+    path('waste-collections/', WasteCollectionListView.as_view(), name='oa-waste-collection-list'),
+    path('waste-collections/report/', WasteCollectionReportView.as_view(), name='oa-waste-collection-report'),
+    path('waste-collections/report/<uuid:operator_id>/', WasteCollectionReportByOperatorView.as_view(), name='oa-waste-collection-report-by-operator'),
 ]

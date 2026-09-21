@@ -61,8 +61,9 @@ class OperatorOnboardingListView(APIView):
                 status=status.HTTP_200_OK
             )
         except Exception as e:
+            logger.error("Failed to load onboarding requests: %s", e)
             return Response(
-                {"success": False, "message": "Failed to load onboarding requests", "errors": str(e)},
+                {"success": False, "message": "Failed to load onboarding requests"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -115,9 +116,9 @@ class OperatorOnboardingApproveView(APIView):
                 user.is_active = True
                 user.save(update_fields=['is_active'])
                 set_staff_verified(user, True)
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to approve onboarding", "errors": str(e)},
+                {"success": False, "message": "Failed to approve onboarding"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -173,9 +174,9 @@ class OperatorOnboardingRejectView(APIView):
 
                 user = onboarding.user
                 set_staff_verified(user, False)
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to reject onboarding", "errors": str(e)},
+                {"success": False, "message": "Failed to reject onboarding"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -218,9 +219,9 @@ class AdminUserOnboardingListView(APIView):
                 {"success": True, "count": len(serializer.data), "data": serializer.data},
                 status=status.HTTP_200_OK
             )
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to load user onboarding requests", "errors": str(e)},
+                {"success": False, "message": "Failed to load user onboarding requests"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -266,9 +267,9 @@ class AdminUserOnboardingApproveView(APIView):
                 user = profile.user
                 user.is_active = True
                 user.save(update_fields=['is_active'])
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to approve user onboarding", "errors": str(e)},
+                {"success": False, "message": "Failed to approve user onboarding"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -317,9 +318,9 @@ class AdminUserOnboardingRejectView(APIView):
                 profile.is_verified = False
                 profile.verified_by = None
                 profile.save()
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to reject user onboarding", "errors": str(e)},
+                {"success": False, "message": "Failed to reject user onboarding"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -337,10 +338,14 @@ class AdminUserOnboardingRejectView(APIView):
 # Operator Admin Pickup Views (moved from pickups app)
 # ---------------------------------------------------------------------------
 
-from pickups.models import PickupRequest
+from pickups.models import PickupRequest, ScheduledPickup, Area, AreaAssignment
 from pickups.serializers import (
     OperatorAdminPickupListSerializer, OperatorAdminPickupDetailSerializer,
     RejectPickupSerializer, AssignOperatorSerializer,
+    ScheduledPickupCreateSerializer, ScheduledPickupUpdateSerializer,
+    ScheduledPickupSerializer,
+    AreaCreateSerializer, AreaSerializer,
+    AreaAssignmentCreateSerializer, AreaAssignmentSerializer,
 )
 
 
@@ -402,6 +407,7 @@ class OperatorAdminPickupDetailView(APIView):
 
 class OperatorAdminPickupAcceptView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsOperatorAdminOnly]
+    serializer_class = OperatorAdminPickupDetailSerializer
 
     @extend_schema(tags=['Operator Admins'], responses={200: None})
     def patch(self, request, pickup_id):
@@ -737,9 +743,9 @@ class OperatorAdminOnboardingView(APIView):
         serializer.is_valid(raise_exception=True)
         try:
             onboarding = serializer.save()
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to submit onboarding", "errors": str(e)},
+                {"success": False, "message": "Failed to submit onboarding"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         return Response(
@@ -775,9 +781,9 @@ class OperatorAdminOnboardingView(APIView):
         serializer.is_valid(raise_exception=True)
         try:
             onboarding = serializer.save()
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to update onboarding", "errors": str(e)},
+                {"success": False, "message": "Failed to update onboarding"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         return Response(
@@ -787,4 +793,416 @@ class OperatorAdminOnboardingView(APIView):
                 "data": OperatorAdminOnboardingSerializer(onboarding).data,
             },
             status=status.HTTP_200_OK
+        )
+
+
+# ---------------------------------------------------------------------------
+# Scheduled Pickup Views
+# ---------------------------------------------------------------------------
+
+class ScheduledPickupCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsOperatorAdminOnly]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        request=ScheduledPickupCreateSerializer,
+        responses={201: ScheduledPickupSerializer},
+    )
+    def post(self, request):
+        serializer = ScheduledPickupCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        pickup = ScheduledPickup.objects.create(
+            scheduled_date=serializer.validated_data['scheduled_date'],
+            created_by=request.user,
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Scheduled pickup created.",
+                "data": ScheduledPickupSerializer(pickup).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class ScheduledPickupUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsOperatorAdminOnly]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        request=ScheduledPickupUpdateSerializer,
+        responses={200: ScheduledPickupSerializer},
+    )
+    def patch(self, request, pickup_id):
+        try:
+            pickup = ScheduledPickup.objects.get(id=pickup_id)
+        except ScheduledPickup.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Scheduled pickup not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = ScheduledPickupUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        pickup.scheduled_date = serializer.validated_data['scheduled_date']
+        pickup.save()
+
+        return Response(
+            {
+                "success": True,
+                "message": "Scheduled pickup date updated.",
+                "data": ScheduledPickupSerializer(pickup).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ScheduledPickupDeleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsOperatorAdminOnly]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        responses={200: None},
+    )
+    def delete(self, request, pickup_id):
+        try:
+            pickup = ScheduledPickup.objects.get(id=pickup_id)
+        except ScheduledPickup.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Scheduled pickup not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        pickup.delete()
+        return Response(
+            {"success": True, "message": "Scheduled pickup deleted."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ScheduledPickupListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        responses={200: ScheduledPickupSerializer(many=True)},
+    )
+    def get(self, request):
+        from django.utils import timezone
+        pickups = ScheduledPickup.objects.filter(
+            scheduled_date__gte=timezone.now().date()
+        ).select_related('created_by').order_by('scheduled_date')
+
+        serializer = ScheduledPickupSerializer(pickups, many=True)
+        return Response(
+            {"success": True, "count": len(serializer.data), "data": serializer.data},
+            status=status.HTTP_200_OK,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Area Management Views
+# ---------------------------------------------------------------------------
+
+class AreaCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsOperatorAdminOnly]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        request=AreaCreateSerializer,
+        responses={201: AreaSerializer},
+    )
+    def post(self, request):
+        serializer = AreaCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        area = Area.objects.create(
+            name=serializer.validated_data['name'],
+            panchayath=serializer.validated_data.get('panchayath', ''),
+            description=serializer.validated_data.get('description', ''),
+            created_by=request.user,
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Area created.",
+                "data": AreaSerializer(area).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class AreaListView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsOperatorAdminOnly]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        responses={200: AreaSerializer(many=True)},
+    )
+    def get(self, request):
+        areas = Area.objects.filter(
+            created_by=request.user
+        ).prefetch_related('assignments').order_by('-created_at')
+
+        serializer = AreaSerializer(areas, many=True)
+        return Response(
+            {"success": True, "count": len(serializer.data), "data": serializer.data},
+            status=status.HTTP_200_OK,
+        )
+
+
+class AreaDeleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsOperatorAdminOnly]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        responses={200: None},
+    )
+    def delete(self, request, area_id):
+        try:
+            area = Area.objects.get(id=area_id, created_by=request.user)
+        except Area.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Area not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        area.delete()
+        return Response(
+            {"success": True, "message": "Area deleted."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class AreaAssignOperatorView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsOperatorAdminOnly]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        request=AreaAssignmentCreateSerializer,
+        responses={201: AreaAssignmentSerializer},
+    )
+    def post(self, request, area_id):
+        try:
+            area = Area.objects.get(id=area_id, created_by=request.user)
+        except Area.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Area not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = AreaAssignmentCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        operator_id = serializer.validated_data['operator_id']
+
+        if AreaAssignment.objects.filter(area=area, operator_id=operator_id).exists():
+            return Response(
+                {"success": False, "message": "Operator is already assigned to this area."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        assignment = AreaAssignment.objects.create(
+            area=area,
+            operator_id=operator_id,
+            assigned_by=request.user,
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Operator assigned to area.",
+                "data": AreaAssignmentSerializer(assignment).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class AreaRemoveOperatorView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsOperatorAdminOnly]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        responses={200: None},
+    )
+    def delete(self, request, area_id, assignment_id):
+        try:
+            assignment = AreaAssignment.objects.get(
+                id=assignment_id,
+                area_id=area_id,
+                area__created_by=request.user,
+            )
+        except AreaAssignment.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Assignment not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        assignment.delete()
+        return Response(
+            {"success": True, "message": "Operator removed from area."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class AreaAssignmentListView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsOperatorAdminOnly]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        responses={200: AreaAssignmentSerializer(many=True)},
+    )
+    def get(self, request, area_id):
+        try:
+            area = Area.objects.get(id=area_id, created_by=request.user)
+        except Area.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Area not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        assignments = AreaAssignment.objects.filter(
+            area=area
+        ).select_related('operator', 'assigned_by').order_by('-assigned_at')
+
+        serializer = AreaAssignmentSerializer(assignments, many=True)
+        return Response(
+            {"success": True, "count": len(serializer.data), "data": serializer.data},
+            status=status.HTTP_200_OK,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Waste Collection Report Views
+# ---------------------------------------------------------------------------
+
+from pickups.models import CollectionRecord
+from pickups.serializers import CollectionRecordSerializer, WasteCollectionReportSerializer
+
+
+class WasteCollectionReportView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsOperatorAdminOnly]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        operation_id="oa_waste_collections_all_reports",
+        responses={200: WasteCollectionReportSerializer},
+    )
+    def get(self, request):
+        collections = CollectionRecord.objects.filter(
+            area__created_by=request.user,
+        ).select_related('operator', 'area', 'pickup_request')
+
+        operator_stats = {}
+        for c in collections:
+            op_id = c.operator_id_display
+            if op_id not in operator_stats:
+                profile = getattr(c.operator, 'operator_profile', None)
+                operator_stats[op_id] = {
+                    'operator_id': op_id,
+                    'operator_name': c.operator.username,
+                    'operator_email': c.operator.email,
+                    'total_collections': 0,
+                    'total_failed': 0,
+                    'total_quantity_kg': 0,
+                    'waste_breakdown': {},
+                    'collections': [],
+                }
+
+            stats = operator_stats[op_id]
+            if c.status == 'COLLECTED':
+                stats['total_collections'] += 1
+                if c.quantity_kg:
+                    stats['total_quantity_kg'] += float(c.quantity_kg)
+            else:
+                stats['total_failed'] += 1
+
+            waste = stats['waste_breakdown']
+            waste[c.waste_type] = waste.get(c.waste_type, 0) + 1
+
+            stats['collections'].append(CollectionRecordSerializer(c).data)
+
+        reports = []
+        for op_id, stats in operator_stats.items():
+            stats['total_quantity_kg'] = round(stats['total_quantity_kg'], 2)
+            reports.append(WasteCollectionReportSerializer(stats).data)
+
+        return Response(
+            {"success": True, "count": len(reports), "data": reports},
+            status=status.HTTP_200_OK,
+        )
+
+
+class WasteCollectionReportByOperatorView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsOperatorAdminOnly]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        operation_id="oa_waste_collections_operator_report",
+        responses={200: WasteCollectionReportSerializer},
+    )
+    def get(self, request, operator_id):
+        try:
+            operator = CustomUser.objects.get(id=operator_id, base_role='operator')
+        except CustomUser.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Operator not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        collections = CollectionRecord.objects.filter(
+            operator=operator,
+            area__created_by=request.user,
+        ).select_related('operator', 'area', 'pickup_request')
+
+        total_collections = collections.filter(status='COLLECTED').count()
+        total_failed = collections.filter(status='FAILED').count()
+        total_quantity = sum(
+            float(c.quantity_kg) for c in collections if c.quantity_kg and c.status == 'COLLECTED'
+        )
+
+        waste_breakdown = {}
+        for c in collections:
+            waste_breakdown[c.waste_type] = waste_breakdown.get(c.waste_type, 0) + 1
+
+        profile = getattr(operator, 'operator_profile', None)
+        op_id_display = profile.operator_id if profile else f"OP-{str(operator.id)[:8]}"
+
+        report = {
+            'operator_id': op_id_display,
+            'operator_name': operator.username,
+            'operator_email': operator.email,
+            'total_collections': total_collections,
+            'total_failed': total_failed,
+            'total_quantity_kg': round(total_quantity, 2),
+            'waste_breakdown': waste_breakdown,
+            'collections': CollectionRecordSerializer(collections, many=True).data,
+        }
+
+        return Response(
+            {"success": True, "data": WasteCollectionReportSerializer(report).data},
+            status=status.HTTP_200_OK,
+        )
+
+
+class WasteCollectionListView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsOperatorAdminOnly]
+
+    @extend_schema(
+        tags=['Operator Admins'],
+        responses={200: CollectionRecordSerializer(many=True)},
+    )
+    def get(self, request):
+        collections = CollectionRecord.objects.filter(
+            area__created_by=request.user,
+        ).select_related('operator', 'area', 'pickup_request').order_by('-collected_at')
+
+        serializer = CollectionRecordSerializer(collections, many=True)
+        return Response(
+            {"success": True, "count": len(serializer.data), "data": serializer.data},
+            status=status.HTTP_200_OK,
         )

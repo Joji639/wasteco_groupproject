@@ -10,6 +10,8 @@ urlpatterns = [
     path('operator-admins/', include('operator_admins.urls')),
     path('superadmins/', include('superadmins.urls')),
     path('payments/', include('payments.urls')),
+    path('services/', include('services.urls')),
+    path('api/waste/', include('waste.urls')),
     path('', include('complaints.urls')),
     path('', include('chat.urls')),
     path('schema/', SpectacularAPIView.as_view(), name='schema'),

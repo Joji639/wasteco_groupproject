@@ -65,6 +65,8 @@ INSTALLED_APPS = [
     'complaints',
     'channels',
     'chat',
+    'services',
+    'waste',
 ]
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -174,13 +176,17 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_THROTTLE_RATES': {
+        'waste_scan': '10/min',
+    },
 }
 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=10),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 
@@ -228,8 +234,17 @@ GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET')
 
 # Razorpay
-RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', default='rzp_test_1234567890abcdef')
-RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', default='your_razorpay_test_secret_here')
+RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET')
+
+# Tracking simulation speed multiplier
+# 60 = 1 real second = 1 simulated minute (5-min route takes ~5 seconds)
+TRACKING_SPEED_MULTIPLIER = 60
+
+# Waste Scanner (Groq)
+GROQ_API_KEY = env('GROQ_API_KEY', default='')
+GROQ_MODEL = env('GROQ_MODEL', default='qwen/qwen3.8-27b')
+CONFIDENCE_THRESHOLD = env.int('CONFIDENCE_THRESHOLD', default=60)
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'EcoBin API',
@@ -237,6 +252,19 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayOperationId': True,
+        'filter': True,
+    },
+    'ENUM_NAME_OVERRIDES': {
+        'PickupStatusEnum': 'pickups.models.PickupRequest.STATUS_CHOICES',
+        'WasteCollectionStatusEnum': 'payments.models.WasteCollection.STATUS_CHOICES',
+        'PaymentStatusEnum': 'payments.models.Payment.PAYMENT_STATUS_CHOICES',
+        'TrackingStatusEnum': 'pickups.models.PickupTracking.STATUS_CHOICES',
+        'ServiceRequestStatusEnum': 'services.models.ServiceRequest.STATUS_CHOICES',
+    },
     'TAGS': [
         {'name': 'Public', 'description': 'Public endpoints — no authentication required (Register, Login, Password Reset, 2FA Login, Google Auth)'},
         {'name': 'User', 'description': 'User endpoints — requires User role (Onboarding, Account Info, Profile, Password Change, Logout)'},
@@ -251,5 +279,8 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Chat - Communities', 'description': 'Community group chat — create, list, update, deactivate communities'},
         {'name': 'Chat - Members', 'description': 'Community members — add, remove, list, update permissions'},
         {'name': 'Chat - Messages', 'description': 'Chat messages — paginated message history for communities'},
+        {'name': 'Services', 'description': 'Service tracking endpoints — create, accept, reject, track service requests'},
+        {'name': 'Complaints', 'description': 'Complaint management endpoints — create, list, assign, and resolve complaints'},
+        {'name': 'Waste Scanner', 'description': 'AI waste classification — upload a photo and get plastic/e-waste/neither classification'},
     ],
 }

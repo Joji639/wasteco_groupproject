@@ -3,13 +3,15 @@ from .models import WasteCollection, Payment
 
 
 class WasteCollectionSerializer(serializers.ModelSerializer):
-    pickup_request_id = serializers.UUIDField(source='pickup_request.id', read_only=True)
+    pickup_request_id = serializers.UUIDField(source='pickup_request.id', read_only=True, default=None)
+    scheduled_pickup_id = serializers.UUIDField(source='scheduled_pickup.id', read_only=True, default=None)
     operator_email = serializers.EmailField(source='operator.email', read_only=True)
 
     class Meta:
         model = WasteCollection
         fields = [
-            'id', 'pickup_request_id', 'operator_email',
+            'id', 'pickup_request_id', 'scheduled_pickup_id', 'operator_email',
+            'resident_name', 'resident_email', 'resident_phone',
             'plastic_kg', 'e_waste_kg',
             'plastic_rate', 'e_waste_rate',
             'plastic_amount', 'e_waste_amount', 'total_amount',
@@ -23,10 +25,21 @@ class WasteCollectionSerializer(serializers.ModelSerializer):
 
 
 class CreateCollectionSerializer(serializers.Serializer):
-    pickup_request_id = serializers.UUIDField()
+    pickup_request_id = serializers.UUIDField(required=False)
+    scheduled_pickup_id = serializers.UUIDField(required=False)
     plastic_kg = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
     e_waste_kg = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
     payment_method = serializers.ChoiceField(choices=['CASH', 'ONLINE'])
+    resident_name = serializers.CharField(max_length=200, required=False, default='')
+    resident_email = serializers.EmailField(required=False, default='')
+    resident_phone = serializers.CharField(max_length=20, required=False, default='')
+
+    def validate(self, data):
+        if not data.get('pickup_request_id') and not data.get('scheduled_pickup_id'):
+            raise serializers.ValidationError("Either pickup_request_id or scheduled_pickup_id is required.")
+        if data.get('pickup_request_id') and data.get('scheduled_pickup_id'):
+            raise serializers.ValidationError("Only one of pickup_request_id or scheduled_pickup_id can be provided.")
+        return data
 
 
 class PaymentSerializer(serializers.ModelSerializer):
@@ -53,7 +66,8 @@ class RazorpayCheckoutResponseSerializer(serializers.Serializer):
     key_id = serializers.CharField()
     receipt = serializers.CharField()
     collection_id = serializers.UUIDField()
-    pickup_request_id = serializers.UUIDField()
+    pickup_request_id = serializers.UUIDField(required=False)
+    scheduled_pickup_id = serializers.UUIDField(required=False)
 
 
 class PaymentStatusResponseSerializer(serializers.Serializer):

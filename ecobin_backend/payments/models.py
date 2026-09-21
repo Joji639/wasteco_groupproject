@@ -22,16 +22,32 @@ class WasteCollection(models.Model):
     )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    pickup_request = models.OneToOneField(
+
+    # On-demand pickup (requires tracking)
+    pickup_request = models.ForeignKey(
         'pickups.PickupRequest',
         on_delete=models.CASCADE,
+        null=True, blank=True,
         related_name='waste_collection',
     )
+    # Scheduled pickup (no tracking needed)
+    scheduled_pickup = models.ForeignKey(
+        'pickups.ScheduledPickup',
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name='waste_collection',
+    )
+
     operator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name='waste_collections',
     )
+
+    # Resident details (for scheduled pickup, operator fills this)
+    resident_name = models.CharField(max_length=200, blank=True, default='')
+    resident_email = models.EmailField(blank=True, default='')
+    resident_phone = models.CharField(max_length=20, blank=True, default='')
 
     plastic_kg = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('0.00'))
     e_waste_kg = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('0.00'))
@@ -53,7 +69,8 @@ class WasteCollection(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Collection {self.id} - {self.pickup_request_id} ({self.status})"
+        pickup_type = 'on-demand' if self.pickup_request else 'scheduled'
+        return f"Collection {self.id} - {pickup_type} ({self.status})"
 
     def calculate_amounts(self):
         self.plastic_amount = self.plastic_kg * self.plastic_rate

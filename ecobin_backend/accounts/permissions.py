@@ -53,7 +53,7 @@ class IsApprovedStaff(BasePermission):
         ):
             return False
         profile = (
-            request.user.operatoradmin_profile
+            getattr(request.user, 'operatoradmin_profile', None)
             if _in_group(request.user, 'OperatorAdmin')
             else getattr(request.user, 'operator_profile', None)
         )
@@ -90,4 +90,15 @@ class IsOperatorRole(BasePermission):
             request.user
             and request.user.is_authenticated
             and _in_group(request.user, 'Operator')
+        )
+
+
+class IsUserRole(BasePermission):
+    message = "User privileges required."
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and _in_group(request.user, 'User')
         )

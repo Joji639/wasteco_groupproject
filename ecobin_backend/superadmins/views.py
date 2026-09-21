@@ -1,17 +1,28 @@
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+import logging
+
+from django.db.models import Avg, Count, Q
+from django.db import transaction
+from django.utils import timezone
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db.models import Avg, Count
 
-from accounts.models import CustomUser, OperatorOnboarding, OperatorProfile, OperatorAdminOnboarding
+from accounts.models import (
+    CustomUser, OperatorOnboarding, OperatorProfile,
+    OperatorAdminOnboarding, UserProfile,
+)
 from accounts.serializers import (
     AdminLoginSerializer, get_tokens_for_user,
     AdminUserListSerializer, AdminStaffListSerializer,
     OperatorOnboardingAdminSerializer, OperatorAdminOnboardingAdminSerializer,
     RejectOnboardingSerializer, set_staff_verified,
+    SuperAdminOnboardingSerializer, SuperAdminUserProfileOnboardingSerializer,
 )
 from accounts.permissions import IsSuperAdminRole
+from pickups.models import OperatorReview
+
+logger = logging.getLogger(__name__)
 
 
 class AdminLoginView(APIView):
@@ -31,9 +42,9 @@ class AdminLoginView(APIView):
                 {"success": False, "message": "Invalid admin credentials"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Login failed", "errors": str(e)},
+                {"success": False, "message": "Login failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -50,20 +61,22 @@ class AdminLoginView(APIView):
             )
 
         if user.is_2fa_enabled:
+            from accounts.views.public_auth import _generate_partial_token
+            partial_token = _generate_partial_token(user.id)
             return Response(
                 {
                     "success": True,
                     "message": "2FA required",
-                    "data": {"requires_2fa": True, "identifier": email}
+                    "data": {"requires_2fa": True, "partial_token": partial_token}
                 },
                 status=status.HTTP_200_OK
             )
 
         try:
             tokens = get_tokens_for_user(user)
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Login failed", "errors": str(e)},
+                {"success": False, "message": "Login failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -102,15 +115,26 @@ class AdminOperatorListView(APIView):
     @extend_schema(tags=['Super Admins'], responses={200: AdminStaffListSerializer(many=True)})
     def get(self, request):
         try:
-            queryset = CustomUser.objects.filter(base_role='operator').select_related('operator_profile')
-            serializer = AdminStaffListSerializer(queryset, many=True)
+            operators = CustomUser.objects.filter(
+                base_role='operator'
+            ).select_related('operator_profile').annotate(
+                avg_rating=Avg('operator_reviews_received__rating'),
+                total_reviews=Count('operator_reviews_received'),
+            )
+            serializer = AdminStaffListSerializer(operators, many=True)
+            data = []
+            for i, op in enumerate(operators):
+                item = serializer.data[i]
+                item['average_rating'] = round(float(op.avg_rating), 1) if op.avg_rating else None
+                item['total_reviews'] = op.total_reviews
+                data.append(item)
             return Response(
-                {"success": True, "count": len(serializer.data), "data": serializer.data},
+                {"success": True, "count": len(data), "data": data},
                 status=status.HTTP_200_OK
             )
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to load operators", "errors": str(e)},
+                {"success": False, "message": "Failed to load operators"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -121,15 +145,26 @@ class AdminOperatorAdminListView(APIView):
     @extend_schema(tags=['Super Admins'], responses={200: AdminStaffListSerializer(many=True)})
     def get(self, request):
         try:
-            queryset = CustomUser.objects.filter(base_role='operatoradmin').select_related('operatoradmin_profile')
-            serializer = AdminStaffListSerializer(queryset, many=True)
+            admins = CustomUser.objects.filter(
+                base_role='operatoradmin'
+            ).select_related('operatoradmin_profile').annotate(
+                avg_rating=Avg('operator_reviews_received__rating'),
+                total_reviews=Count('operator_reviews_received'),
+            )
+            serializer = AdminStaffListSerializer(admins, many=True)
+            data = []
+            for i, admin in enumerate(admins):
+                item = serializer.data[i]
+                item['average_rating'] = round(float(admin.avg_rating), 1) if admin.avg_rating else None
+                item['total_reviews'] = admin.total_reviews
+                data.append(item)
             return Response(
-                {"success": True, "count": len(serializer.data), "data": serializer.data},
+                {"success": True, "count": len(data), "data": data},
                 status=status.HTTP_200_OK
             )
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to load operator admins", "errors": str(e)},
+                {"success": False, "message": "Failed to load operator admins"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -140,76 +175,87 @@ class AdminOnboardingListView(APIView):
     @extend_schema(
         tags=['Super Admins'],
         parameters=[
-            OpenApiParameter("status", str, enum=["pending", "approved"], description="Filter by status"),
-            OpenApiParameter("role", str, description="Filter by role"),
+            OpenApiParameter("role", str, enum=["user", "operator", "operatoradmin"],
+                             description="Filter by role (required)"),
+            OpenApiParameter("status", str, enum=["pending", "approved", "rejected", "not_submitted"],
+                             description="Filter by status"),
         ],
-        responses={200: OperatorOnboardingAdminSerializer(many=True)}
+        responses={200: None}
     )
     def get(self, request):
-        try:
-            queryset = OperatorOnboarding.objects.select_related('user', 'approved_by').all()
-
-            filter_param = request.query_params.get('status')
-            if filter_param == 'pending':
-                queryset = queryset.filter(approved=False)
-            elif filter_param == 'approved':
-                queryset = queryset.filter(approved=True)
-
-            role_filter = request.query_params.get('role')
-            if role_filter:
-                queryset = queryset.filter(user__base_role=role_filter)
-
-            serializer = OperatorOnboardingAdminSerializer(queryset, many=True)
+        role = request.query_params.get('role')
+        if not role:
             return Response(
-                {"success": True, "count": len(serializer.data), "data": serializer.data},
+                {"success": False, "message": "Query parameter 'role' is required (user, operator, operatoradmin)."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        status_filter = request.query_params.get('status')
+
+        try:
+            if role == 'user':
+                results = self._get_user_onboardings(status_filter)
+            elif role == 'operator':
+                results = self._get_operator_onboardings(status_filter)
+            elif role == 'operatoradmin':
+                results = self._get_operatoradmin_onboardings(status_filter)
+            else:
+                return Response(
+                    {"success": False, "message": "Invalid role. Must be: user, operator, operatoradmin"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            return Response(
+                {"success": True, "role": role, "count": len(results), "data": results},
                 status=status.HTTP_200_OK
             )
         except Exception as e:
+            logger.error("Failed to load onboardings: %s", e)
             return Response(
-                {"success": False, "message": "Failed to load onboarding requests", "errors": str(e)},
+                {"success": False, "message": "Failed to load onboarding requests"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-
-# ---------------------------------------------------------------------------
-# Super Admin Rating Views
-# ---------------------------------------------------------------------------
-
-from pickups.models import OperatorReview
-from pickups.serializers import OperatorAdminRatingSerializer
-
-
-class SuperAdminOperatorRatingsView(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsSuperAdminRole]
-
-    @extend_schema(
-        tags=['Super Admins'],
-        responses={200: OperatorAdminRatingSerializer(many=True)}
-    )
-    def get(self, request):
-        operators = OperatorProfile.objects.select_related('user').all()
-
-        results = []
-        for op in operators:
-            reviews = OperatorReview.objects.filter(operator=op.user)
-            total = reviews.count()
-            if total > 0:
-                avg = reviews.aggregate(avg=Avg('rating'))['avg']
-                avg_rating = round(float(avg), 1)
-            else:
-                avg_rating = None
-
-            results.append({
-                'operator_id': op.user.id,
-                'operator_name': op.user.username or op.user.email,
-                'average_rating': avg_rating,
-                'total_reviews': total,
-            })
-
-        return Response(
-            {"success": True, "count": len(results), "data": results},
-            status=status.HTTP_200_OK,
+    def _get_user_onboardings(self, status_filter):
+        qs = UserProfile.objects.select_related('user', 'verified_by').filter(
+            user__base_role='user'
         )
+        if status_filter == 'approved':
+            qs = qs.filter(is_verified=True)
+        elif status_filter == 'pending':
+            qs = qs.filter(is_verified=False).exclude(address__isnull=True, current_location__isnull=True)
+        elif status_filter == 'not_submitted':
+            qs = qs.filter(address__isnull=True, current_location__isnull=True)
+        elif status_filter == 'rejected':
+            qs = qs.filter(is_verified=False).exclude(rejection_reason='')
+
+        return SuperAdminUserProfileOnboardingSerializer(qs, many=True).data
+
+    def _get_operator_onboardings(self, status_filter):
+        qs = OperatorOnboarding.objects.select_related('user', 'approved_by').filter(
+            user__base_role='operator'
+        )
+        if status_filter == 'approved':
+            qs = qs.filter(approved=True)
+        elif status_filter == 'pending':
+            qs = qs.filter(approved=False, rejection_reason='')
+        elif status_filter == 'rejected':
+            qs = qs.filter(approved=False).exclude(rejection_reason='')
+
+        return SuperAdminOnboardingSerializer(qs, many=True).data
+
+    def _get_operatoradmin_onboardings(self, status_filter):
+        qs = OperatorAdminOnboarding.objects.select_related('user', 'approved_by').filter(
+            user__base_role='operatoradmin'
+        )
+        if status_filter == 'approved':
+            qs = qs.filter(approved=True)
+        elif status_filter == 'pending':
+            qs = qs.filter(approved=False, rejection_reason='')
+        elif status_filter == 'rejected':
+            qs = qs.filter(approved=False).exclude(rejection_reason='')
+
+        return SuperAdminOnboardingSerializer(qs, many=True).data
 
 
 # ---------------------------------------------------------------------------
@@ -247,9 +293,9 @@ class AdminOAOnboardingListView(APIView):
                 {"success": True, "count": len(serializer.data), "data": serializer.data},
                 status=status.HTTP_200_OK
             )
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to load onboarding requests", "errors": str(e)},
+                {"success": False, "message": "Failed to load onboarding requests"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -295,9 +341,9 @@ class AdminOAOnboardingApproveView(APIView):
 
                 onboarding.user.is_active = True
                 onboarding.user.save(update_fields=['is_active'])
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to approve onboarding", "errors": str(e)},
+                {"success": False, "message": "Failed to approve onboarding"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -348,9 +394,9 @@ class AdminOAOnboardingRejectView(APIView):
                 profile = onboarding.user.operatoradmin_profile
                 profile.is_verified = False
                 profile.save(update_fields=['is_verified'])
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to reject onboarding", "errors": str(e)},
+                {"success": False, "message": "Failed to reject onboarding"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

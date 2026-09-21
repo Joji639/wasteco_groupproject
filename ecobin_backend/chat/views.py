@@ -124,6 +124,7 @@ class CommunityDetailView(APIView):
 
 class CommunityUpdateView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsOperatorAdminRole]
+    serializer_class = CommunityCreateSerializer
 
     @extend_schema(tags=['Chat - Communities'], request=CommunityCreateSerializer)
     def patch(self, request, community_id):
@@ -162,6 +163,7 @@ class CommunityUpdateView(APIView):
 
 class CommunityDeactivateView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsOperatorAdminRole]
+    serializer_class = CommunityDetailSerializer
 
     @extend_schema(tags=['Chat - Communities'])
     def post(self, request, community_id):
@@ -196,6 +198,7 @@ class CommunityDeactivateView(APIView):
 
 class MemberAddView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsOperatorOrAdmin]
+    serializer_class = MemberAddSerializer
 
     @extend_schema(tags=['Chat - Members'], request=MemberAddSerializer)
     def post(self, request, community_id):
@@ -257,6 +260,7 @@ class MemberAddView(APIView):
 
 class MemberRemoveView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsOperatorAdminRole]
+    serializer_class = MemberDetailSerializer
 
     @extend_schema(tags=['Chat - Members'])
     def delete(self, request, community_id, member_id):
@@ -323,6 +327,7 @@ class MemberListView(APIView):
 
 class MemberPermissionView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsOperatorAdminRole]
+    serializer_class = PermissionUpdateSerializer
 
     @extend_schema(tags=['Chat - Members'], request=PermissionUpdateSerializer)
     def patch(self, request, community_id, member_id):
