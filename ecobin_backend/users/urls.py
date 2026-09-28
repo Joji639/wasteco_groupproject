@@ -5,6 +5,7 @@ from .views import (
     PickupRequestCreateView,
     UserReviewCreateView, UserReviewDetailView,
 )
+from operator_admins.views import ScheduledPickupListView
 
 urlpatterns = [
     path('onboarding/', OnboardingView.as_view(), name='user-onboarding'),
@@ -15,4 +16,5 @@ urlpatterns = [
     path('pickups/', PickupRequestCreateView.as_view(), name='user-pickup-create'),
     path('pickups/<uuid:pickup_id>/review/', UserReviewCreateView.as_view(), name='user-pickup-review-create'),
     path('pickups/<uuid:pickup_id>/review/detail/', UserReviewDetailView.as_view(), name='user-pickup-review-detail'),
+    path('scheduled-pickups/', ScheduledPickupListView.as_view(), name='user-scheduled-pickup-list'),
 ]

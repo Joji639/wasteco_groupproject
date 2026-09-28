@@ -100,7 +100,7 @@ class UserComplaintCreateView(APIView):
         except Exception as e:
             logger.error("Failed to create complaint: %s", e)
             return Response(
-                {"success": False, "message": "Failed to create complaint.", "errors": str(e)},
+                {"success": False, "message": "Failed to create complaint."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

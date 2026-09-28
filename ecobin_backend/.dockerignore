@@ -1,45 +1,21 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-.eggs/
-build/
-dist/
-.venv/
-venv/
-env/
-
-# Django
-*.log
-logs/
-db.sqlite3
-db.sqlite3-journal
-media/
-staticfiles/
-*.pot
-*.mo
-
-# Environment / secrets
 .env
-.env.*
-!.env.example
-
-# IDE / editor
-.vscode/
-.idea/
-*.swp
-*.swo
-.DS_Store
-
-# Celery
-celerybeat-schedule
-celerybeat.pid
-
-# Local docs / collections
-EcoBin_API.postman_collection.json
-POSTMAN_API_GUIDE.md
-
-# Docker files not needed in image
-docker-compose*.yml
-Dockerfile*
+.env.example
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist
+build
+.venv
+venv
+env
+.idea
+.vscode
+*.log
+docker-compose.yml
+Dockerfile
+.dockerignore
+README.md
+schema.yml

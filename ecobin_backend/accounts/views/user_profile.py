@@ -45,9 +45,9 @@ class OnboardingView(APIView):
 
         try:
             serializer.save()
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to save onboarding details", "errors": str(e)},
+                {"success": False, "message": "Failed to save onboarding details"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -73,9 +73,9 @@ class LogoutView(APIView):
                 {"success": False, "message": "Invalid or expired token"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Logout failed", "errors": str(e)},
+                {"success": False, "message": "Logout failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -103,9 +103,9 @@ class AccountInfoView(APIView):
 
         try:
             serializer.save()
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Update failed", "errors": str(e)},
+                {"success": False, "message": "Update failed"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -154,9 +154,9 @@ class PersonalInfoView(APIView):
 
         try:
             serializer.save()
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Update failed", "errors": str(e)},
+                {"success": False, "message": "Update failed"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -189,9 +189,9 @@ class ChangePasswordView(APIView):
         try:
             user.set_password(serializer.validated_data['new_password'])
             user.save()
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Password change failed", "errors": str(e)},
+                {"success": False, "message": "Password change failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

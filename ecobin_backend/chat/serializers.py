@@ -90,19 +90,35 @@ class MemberDetailSerializer(serializers.ModelSerializer):
 
 
 class MemberAddSerializer(serializers.Serializer):
-    operator_id = serializers.UUIDField()
+    operator_id = serializers.CharField(help_text="Operator ID (e.g. OP-992A3B8F) or User ID (UUID)")
 
     def validate_operator_id(self, value):
-        from accounts.models import CustomUser
+        from accounts.models import CustomUser, OperatorProfile
+        val_str = str(value).strip()
+        user = None
+
         try:
-            user = CustomUser.objects.get(id=value)
-        except CustomUser.DoesNotExist:
-            raise serializers.ValidationError('User not found.')
+            profile = OperatorProfile.objects.select_related('user').get(operator_id=val_str)
+            user = profile.user
+        except OperatorProfile.DoesNotExist:
+            pass
+
+        if not user:
+            try:
+                user = CustomUser.objects.get(id=val_str)
+            except (CustomUser.DoesNotExist, ValueError, TypeError):
+                pass
+
+        if not user:
+            raise serializers.ValidationError('Operator not found. Provide a valid operator_id (e.g. OP-XXXXX) or user UUID.')
+
         if user.base_role != 'operator':
             raise serializers.ValidationError('Only operators can be added to communities.')
+
         if not user.is_active:
             raise serializers.ValidationError('Cannot add an inactive operator.')
-        return value
+
+        return user.id
 
 
 class PermissionUpdateSerializer(serializers.Serializer):

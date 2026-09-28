@@ -1,3 +1,4 @@
+import logging
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -10,17 +11,42 @@ from ..serializers import (
     OperatorOnboardingAdminSerializer,
 )
 from ..permissions import IsSuperAdminRole
+from .constants import RATE_LIMIT_PREFIX, RATE_LIMIT_ATTEMPTS, RATE_LIMIT_WINDOW
+
+logger = logging.getLogger(__name__)
+
+try:
+    from django.core.cache import cache
+except ImportError:
+    cache = None
+
+
+def _check_rate_limit(key, max_attempts=RATE_LIMIT_ATTEMPTS, window=RATE_LIMIT_WINDOW):
+    if cache is None:
+        return True
+    cache_key = f"{RATE_LIMIT_PREFIX}{key}"
+    attempts = cache.get(cache_key, 0)
+    if attempts >= max_attempts:
+        return False
+    cache.set(cache_key, attempts + 1, timeout=window)
+    return True
 
 
 class AdminLoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(tags=['Super Admin'], request=AdminLoginSerializer, responses={200: None})
+    @extend_schema(tags=['Super Admins'], request=AdminLoginSerializer, responses={200: None})
     def post(self, request):
         serializer = AdminLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data['email']
         password = serializer.validated_data['password']
+
+        if not _check_rate_limit(f"admin_login:{email}"):
+            return Response(
+                {"success": False, "message": "Too many login attempts. Please try again later."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
 
         try:
             user = CustomUser.objects.get(email=email, base_role='superadmin')
@@ -29,9 +55,9 @@ class AdminLoginView(APIView):
                 {"success": False, "message": "Invalid admin credentials"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Login failed", "errors": str(e)},
+                {"success": False, "message": "Login failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -48,11 +74,13 @@ class AdminLoginView(APIView):
             )
 
         if user.is_2fa_enabled:
+            from .public_auth import _generate_partial_token
+            partial_token = _generate_partial_token(user.id)
             return Response(
                 {
                     "success": True,
                     "message": "2FA required",
-                    "data": {"requires_2fa": True, "identifier": email}
+                    "data": {"requires_2fa": True, "partial_token": partial_token}
                 },
                 status=status.HTTP_200_OK
             )
@@ -78,7 +106,7 @@ class AdminLoginView(APIView):
 class AdminUserListView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsSuperAdminRole]
 
-    @extend_schema(tags=['Super Admin'], responses={200: AdminUserListSerializer(many=True)})
+    @extend_schema(tags=['Super Admins'], responses={200: AdminUserListSerializer(many=True)})
     def get(self, request):
         try:
             queryset = CustomUser.objects.filter(base_role='user').select_related('user_profile')
@@ -88,8 +116,9 @@ class AdminUserListView(APIView):
                 status=status.HTTP_200_OK
             )
         except Exception as e:
+            logger.error("Failed to load users: %s", e)
             return Response(
-                {"success": False, "message": "Failed to load users", "errors": str(e)},
+                {"success": False, "message": "Failed to load users"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -97,7 +126,7 @@ class AdminUserListView(APIView):
 class AdminOperatorListView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsSuperAdminRole]
 
-    @extend_schema(tags=['Super Admin'], responses={200: AdminStaffListSerializer(many=True)})
+    @extend_schema(tags=['Super Admins'], responses={200: AdminStaffListSerializer(many=True)})
     def get(self, request):
         try:
             queryset = CustomUser.objects.filter(base_role='operator').select_related('operator_profile')
@@ -106,9 +135,9 @@ class AdminOperatorListView(APIView):
                 {"success": True, "count": len(serializer.data), "data": serializer.data},
                 status=status.HTTP_200_OK
             )
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to load operators", "errors": str(e)},
+                {"success": False, "message": "Login failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -116,7 +145,7 @@ class AdminOperatorListView(APIView):
 class AdminOperatorAdminListView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsSuperAdminRole]
 
-    @extend_schema(tags=['Super Admin'], responses={200: AdminStaffListSerializer(many=True)})
+    @extend_schema(tags=['Super Admins'], responses={200: AdminStaffListSerializer(many=True)})
     def get(self, request):
         try:
             queryset = CustomUser.objects.filter(base_role='operatoradmin').select_related('operatoradmin_profile')
@@ -125,9 +154,9 @@ class AdminOperatorAdminListView(APIView):
                 {"success": True, "count": len(serializer.data), "data": serializer.data},
                 status=status.HTTP_200_OK
             )
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to load operator admins", "errors": str(e)},
+                {"success": False, "message": "Failed to load operator admins"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -136,7 +165,7 @@ class AdminOnboardingListView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsSuperAdminRole]
 
     @extend_schema(
-        tags=['Super Admin'],
+        tags=['Super Admins'],
         parameters=[
             OpenApiParameter("status", str, enum=["pending", "approved"], description="Filter by status"),
             OpenApiParameter("role", str, description="Filter by role"),
@@ -162,8 +191,8 @@ class AdminOnboardingListView(APIView):
                 {"success": True, "count": len(serializer.data), "data": serializer.data},
                 status=status.HTTP_200_OK
             )
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to load onboarding requests", "errors": str(e)},
+                {"success": False, "message": "Failed to load onboarding requests"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

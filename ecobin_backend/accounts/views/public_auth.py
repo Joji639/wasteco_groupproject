@@ -1,4 +1,4 @@
-import random
+import secrets
 import logging
 
 from django.conf import settings
@@ -18,25 +18,51 @@ from ..serializers import (
     GoogleAuthSerializer, StaffLoginSerializer, StaffRegistrationSerializer,
     staff_onboarding_status,
 )
+from ..permissions import IsSuperAdminRole
 from ..tasks import send_email_otp_task
-from .constants import OTP_CACHE_PREFIX, OTP_TTL_SECONDS
+from .constants import (
+    OTP_CACHE_PREFIX, OTP_TTL_SECONDS,
+    PARTIAL_TOKEN_PREFIX, PARTIAL_TOKEN_TTL_SECONDS,
+    RATE_LIMIT_PREFIX, RATE_LIMIT_ATTEMPTS, RATE_LIMIT_WINDOW,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _check_rate_limit(key, max_attempts=RATE_LIMIT_ATTEMPTS, window=RATE_LIMIT_WINDOW):
+    cache_key = f"{RATE_LIMIT_PREFIX}{key}"
+    attempts = cache.get(cache_key, 0)
+    if attempts >= max_attempts:
+        return False
+    cache.set(cache_key, attempts + 1, timeout=window)
+    return True
+
+
+def _generate_partial_token(user_id):
+    token = secrets.token_urlsafe(32)
+    cache.set(f"{PARTIAL_TOKEN_PREFIX}{token}", str(user_id), timeout=PARTIAL_TOKEN_TTL_SECONDS)
+    return token
 
 
 class UserRegistrationView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(tags=['Public'], request=UserRegistrationSerializer, responses={201: None})
+    @extend_schema(
+        tags=['Public'],
+        summary="User Registration (Public - No Token Required)",
+        description="Public endpoint to register a new Resident/User account. Requires NO authentication token.",
+        request=UserRegistrationSerializer,
+        responses={201: None}
+    )
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         try:
             user = serializer.save()
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Registration failed", "errors": str(e)},
+                {"success": False, "message": "Registration failed"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -57,22 +83,34 @@ class UserRegistrationView(APIView):
 class UserLoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(tags=['Public'], request=UserLoginSerializer, responses={200: None})
+    @extend_schema(
+        tags=['Public'],
+        summary="User Login (Public - No Token Required)",
+        description="Public endpoint to log in a Resident/User account using email or phone.",
+        request=UserLoginSerializer,
+        responses={200: None}
+    )
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         identifier = serializer.validated_data['identifier']
         password = serializer.validated_data['password']
 
-        try:
-            user = CustomUser.objects.get(
-                Q(email=identifier) | Q(phone=identifier),
-                base_role='user'
+        if not _check_rate_limit(f"user_login:{identifier}"):
+            return Response(
+                {"success": False, "message": "Too many login attempts. Please try again later."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
             )
+
+        try:
+            if "@" in identifier:
+                user = CustomUser.objects.get(email=identifier, base_role='user')
+            else:
+                user = CustomUser.objects.get(phone=identifier, base_role='user')
         except CustomUser.DoesNotExist:
             return Response({"success": False, "message": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
-        except Exception as e:
-            return Response({"success": False, "message": "Login failed", "errors": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception:
+            return Response({"success": False, "message": "Login failed"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         if not user.check_password(password):
             return Response({"success": False, "message": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -81,11 +119,12 @@ class UserLoginView(APIView):
             return Response({"success": False, "message": "Account is disabled"}, status=status.HTTP_403_FORBIDDEN)
 
         if user.is_2fa_enabled:
+            partial_token = _generate_partial_token(user.id)
             return Response(
                 {
                     "success": True,
                     "message": "2FA required",
-                    "data": {"requires_2fa": True, "email": user.email}
+                    "data": {"requires_2fa": True, "partial_token": partial_token}
                 },
                 status=status.HTTP_200_OK
             )
@@ -128,6 +167,12 @@ class ForgotPasswordRequestView(APIView):
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data['email']
 
+        if not _check_rate_limit(f"otp:{email}"):
+            return Response(
+                {"success": False, "message": "Too many requests. Please try again later."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+
         try:
             user = CustomUser.objects.get(email=email)
         except CustomUser.DoesNotExist:
@@ -136,13 +181,13 @@ class ForgotPasswordRequestView(APIView):
                 status=status.HTTP_200_OK
             )
 
-        code = str(random.randint(100000, 999999))
+        code = str(secrets.randbelow(900000) + 100000)
 
         try:
             cache.set(f"{OTP_CACHE_PREFIX}{email}", code, timeout=OTP_TTL_SECONDS)
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Failed to generate OTP", "errors": str(e)},
+                {"success": False, "message": "Failed to generate OTP"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -186,9 +231,9 @@ class ResetPasswordView(APIView):
             user.set_password(new_password)
             user.save()
             cache.delete(cache_key)
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Password reset failed", "errors": str(e)},
+                {"success": False, "message": "Password reset failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -213,14 +258,14 @@ class GoogleAuthView(APIView):
                 google_requests.Request(),
                 settings.GOOGLE_CLIENT_ID
             )
-        except ValueError as e:
+        except ValueError:
             return Response(
-                {"success": False, "message": "Invalid Google token", "errors": str(e)},
+                {"success": False, "message": "Invalid Google token"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Google authentication failed", "errors": str(e)},
+                {"success": False, "message": "Google authentication failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -246,16 +291,15 @@ class GoogleAuthView(APIView):
                 )
                 user.set_unusable_password()
                 user.save()
-                UserProfile.objects.create(user=user)
                 created = True
-            except Exception as e:
+            except Exception:
                 return Response(
-                    {"success": False, "message": "Account creation failed", "errors": str(e)},
+                    {"success": False, "message": "Account creation failed"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Login failed", "errors": str(e)},
+                {"success": False, "message": "Login failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -265,10 +309,7 @@ class GoogleAuthView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        try:
-            profile = user.user_profile
-        except UserProfile.DoesNotExist:
-            profile = UserProfile.objects.create(user=user)
+        profile, _ = UserProfile.objects.get_or_create(user=user)
 
         tokens = get_tokens_for_user(user)
 
@@ -297,13 +338,26 @@ class GoogleAuthView(APIView):
 class StaffLoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(tags=['Public'], request=StaffLoginSerializer, responses={200: None})
+    @extend_schema(
+        tags=['Public'],
+        summary="Staff Login (Operator / OperatorAdmin - No Token Required)",
+        description="Public endpoint for staff (Operators & OperatorAdmins) to log in using email/phone and password.",
+        request=StaffLoginSerializer,
+        responses={200: None}
+    )
     def post(self, request):
         serializer = StaffLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         identifier = serializer.validated_data.get('identifier')
         operator_id = serializer.validated_data.get('operator_id')
         password = serializer.validated_data['password']
+
+        rate_key = f"staff_login:{identifier or operator_id}"
+        if not _check_rate_limit(rate_key):
+            return Response(
+                {"success": False, "message": "Too many login attempts. Please try again later."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
 
         try:
             if operator_id:
@@ -313,9 +367,14 @@ class StaffLoginView(APIView):
                     else OperatorProfile.objects.select_related('user').get(operator_id=operator_id)
                 )
                 user = profile.user
+            elif "@" in identifier:
+                user = CustomUser.objects.get(
+                    email=identifier,
+                    base_role__in=['operator', 'operatoradmin']
+                )
             else:
                 user = CustomUser.objects.get(
-                    Q(email=identifier) | Q(phone=identifier),
+                    phone=identifier,
                     base_role__in=['operator', 'operatoradmin']
                 )
         except (CustomUser.DoesNotExist, OperatorProfile.DoesNotExist, OperatorAdminProfile.DoesNotExist):
@@ -323,9 +382,9 @@ class StaffLoginView(APIView):
                 {"success": False, "message": "Invalid credentials"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Login failed", "errors": str(e)},
+                {"success": False, "message": "Login failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -348,11 +407,12 @@ class StaffLoginView(APIView):
             )
 
         if user.is_2fa_enabled:
+            partial_token = _generate_partial_token(user.id)
             return Response(
                 {
                     "success": True,
                     "message": "2FA required",
-                    "data": {"requires_2fa": True, "operator_id": user.staff_operator_id}
+                    "data": {"requires_2fa": True, "partial_token": partial_token}
                 },
                 status=status.HTTP_200_OK
             )
@@ -360,9 +420,9 @@ class StaffLoginView(APIView):
         try:
             tokens = get_tokens_for_user(user)
             profile = user.operatoradmin_profile if user.base_role == 'operatoradmin' else user.operator_profile
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Login failed", "errors": str(e)},
+                {"success": False, "message": "Login failed"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -387,16 +447,22 @@ class StaffLoginView(APIView):
 class StaffRegistrationView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(tags=['Public'], request=StaffRegistrationSerializer, responses={201: None})
+    @extend_schema(
+        tags=['Public'],
+        summary="Staff Registration (Operator / OperatorAdmin - Public)",
+        description="Public registration endpoint for prospective Operators and OperatorAdmins to sign up. No authentication required.",
+        request=StaffRegistrationSerializer,
+        responses={201: None}
+    )
     def post(self, request):
         serializer = StaffRegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         try:
             user = serializer.save()
-        except Exception as e:
+        except Exception:
             return Response(
-                {"success": False, "message": "Registration failed", "errors": str(e)},
+                {"success": False, "message": "Registration failed"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

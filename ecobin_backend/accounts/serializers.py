@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import RegexValidator
-from .models import CustomUser, UserProfile, OperatorProfile, OperatorAdminProfile, OperatorOnboarding
+from .models import CustomUser, UserProfile, OperatorProfile, OperatorAdminProfile, OperatorOnboarding, OperatorAdminOnboarding
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
@@ -178,16 +178,8 @@ class Disable2FASerializer(serializers.Serializer):
 
 
 class LoginWith2FASerializer(serializers.Serializer):
-    identifier = serializers.CharField(required=False)   # email or phone
-    operator_id = serializers.CharField(required=False)  # OP-xxxxx / OA-xxxxx
+    partial_token = serializers.CharField(required=True)
     code = serializers.CharField(required=True, max_length=6, min_length=6)
-
-    def validate(self, data):
-        if not data.get('identifier') and not data.get('operator_id'):
-            raise serializers.ValidationError(
-                "Provide either 'identifier' (email/phone) or 'operator_id'"
-            )
-        return data
 
 
 class ForgotPasswordRequestSerializer(serializers.Serializer):
@@ -290,6 +282,9 @@ class OperatorOnboardingSerializer(serializers.ModelSerializer):
             message='Aadhaar must be exactly 12 digits.'
         )]
     )
+    photo = serializers.ImageField(required=False, allow_null=True)
+    pan_image = serializers.ImageField(required=False, allow_null=True)
+    aadhaar_image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = OperatorOnboarding
@@ -432,7 +427,10 @@ class AdminUserOnboardingSerializer(serializers.ModelSerializer):
 
 
 def staff_onboarding_status(user):
-    onboarding = getattr(user, 'operator_onboarding', None)
+    if user.base_role == 'operatoradmin':
+        onboarding = getattr(user, 'operatoradmin_onboarding', None)
+    else:
+        onboarding = getattr(user, 'operator_onboarding', None)
     if onboarding is None:
         return 'not_submitted'
     if onboarding.approved:
@@ -485,4 +483,185 @@ class AdminStaffListSerializer(serializers.ModelSerializer):
 
     def get_onboarding_status(self, obj):
         return staff_onboarding_status(obj)
+
+
+class OperatorAdminOnboardingSerializer(serializers.ModelSerializer):
+    photo = serializers.ImageField(required=False, allow_null=True)
+    pan_image = serializers.ImageField(required=False, allow_null=True)
+    aadhaar_image = serializers.ImageField(required=False, allow_null=True)
+    pan_number = serializers.CharField(
+        validators=[RegexValidator(
+            regex=r'^[A-Z]{5}[0-9]{4}[A-Z]$',
+            message='Enter a valid PAN number (e.g. ABCDE1234F).'
+        )]
+    )
+    aadhaar_number = serializers.CharField(
+        validators=[RegexValidator(
+            regex=r'^\d{12}$',
+            message='Aadhaar must be exactly 12 digits.'
+        )]
+    )
+
+    class Meta:
+        model = OperatorAdminOnboarding
+        fields = [
+            'id', 'user', 'photo', 'pan_number', 'pan_image',
+            'aadhaar_number', 'aadhaar_image', 'approved', 'approved_by',
+            'approved_at', 'rejection_reason', 'created_at', 'updated_at',
+        ]
+        read_only_fields = [
+            'id', 'user', 'approved', 'approved_by',
+            'approved_at', 'rejection_reason', 'created_at', 'updated_at',
+        ]
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        if instance.approved:
+            instance.approved = False
+            instance.approved_at = None
+            instance.approved_by = None
+            instance.rejection_reason = ''
+            instance.save(update_fields=[
+                'approved', 'approved_at', 'approved_by', 'rejection_reason', 'updated_at'
+            ])
+            profile = getattr(instance.user, 'operatoradmin_profile', None)
+            if profile:
+                profile.is_verified = False
+                profile.save(update_fields=['is_verified'])
+        return instance
+
+
+class OperatorAdminOnboardingAdminSerializer(OperatorAdminOnboardingSerializer):
+    account = serializers.SerializerMethodField()
+    role = serializers.CharField(source='user.base_role', read_only=True)
+
+    class Meta(OperatorAdminOnboardingSerializer.Meta):
+        fields = OperatorAdminOnboardingSerializer.Meta.fields + ['account', 'role']
+        read_only_fields = OperatorAdminOnboardingSerializer.Meta.read_only_fields + ['role']
+
+    def get_account(self, obj):
+        return {
+            'username': obj.user.username,
+            'email': obj.user.email,
+            'phone': str(obj.user.phone) if obj.user.phone else None,
+        }
+
+
+# ---------------------------------------------------------------------------
+# Super Admin: Unified Onboarding Serializer (all roles)
+# ---------------------------------------------------------------------------
+
+class SuperAdminOnboardingSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    role = serializers.CharField()
+    account = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    pan_number = serializers.CharField()
+    aadhaar_number = serializers.CharField()
+    photo = serializers.SerializerMethodField()
+    pan_image = serializers.SerializerMethodField()
+    aadhaar_image = serializers.SerializerMethodField()
+    rejection_reason = serializers.CharField()
+    approved = serializers.BooleanField()
+    approved_by = serializers.SerializerMethodField()
+    approved_at = serializers.DateTimeField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+    def get_account(self, obj):
+        user = obj.user
+        return {
+            'id': str(user.id),
+            'username': user.username,
+            'email': user.email,
+            'phone': str(user.phone) if user.phone else None,
+            'is_active': user.is_active,
+        }
+
+    def get_status(self, obj):
+        if obj.approved:
+            return 'approved'
+        if obj.rejection_reason:
+            return 'rejected'
+        return 'pending'
+
+    def get_photo(self, obj):
+        val = getattr(obj, 'photo', None)
+        return getattr(val, 'url', str(val)) if val else None
+
+    def get_pan_image(self, obj):
+        val = getattr(obj, 'pan_image', None)
+        return getattr(val, 'url', str(val)) if val else None
+
+    def get_aadhaar_image(self, obj):
+        val = getattr(obj, 'aadhaar_image', None)
+        return getattr(val, 'url', str(val)) if val else None
+
+    def get_approved_by(self, obj):
+        if obj.approved_by:
+            return {
+                'id': str(obj.approved_by.id),
+                'email': obj.approved_by.email,
+            }
+        return None
+
+
+class SuperAdminUserProfileOnboardingSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    role = serializers.CharField()
+    account = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    address = serializers.CharField()
+    current_location = serializers.CharField(allow_null=True)
+    house_number = serializers.CharField(allow_null=True)
+    pin = serializers.CharField(allow_null=True)
+    pan_card_image = serializers.SerializerMethodField()
+    house_tax_receipt = serializers.SerializerMethodField()
+    rent_agreement = serializers.SerializerMethodField()
+    rejection_reason = serializers.CharField()
+    is_verified = serializers.BooleanField()
+    verified_by = serializers.SerializerMethodField()
+
+    def get_account(self, obj):
+        user = obj.user
+        return {
+            'id': str(user.id),
+            'username': user.username,
+            'email': user.email,
+            'phone': str(user.phone) if user.phone else None,
+            'is_active': user.is_active,
+        }
+
+    def get_status(self, obj):
+        if not obj.address and not obj.current_location:
+            return 'not_submitted'
+        if obj.is_verified:
+            return 'approved'
+        if obj.rejection_reason:
+            return 'rejected'
+        return 'pending'
+
+    def get_pan_card_image(self, obj):
+        val = obj.pan_card_image
+        return getattr(val, 'url', str(val)) if val else None
+
+    def get_house_tax_receipt(self, obj):
+        val = obj.house_tax_receipt
+        return getattr(val, 'url', str(val)) if val else None
+
+    def get_rent_agreement(self, obj):
+        val = obj.rent_agreement
+        return getattr(val, 'url', str(val)) if val else None
+
+    def get_verified_by(self, obj):
+        if obj.verified_by:
+            return {
+                'operator_id': obj.verified_by.operator_id,
+                'panchayath': obj.verified_by.panchayath,
+            }
+        return None
 

@@ -4,6 +4,7 @@ import io
 import base64
 
 from django.db.models import Q
+from django.core.cache import cache
 from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -14,10 +15,12 @@ from ..serializers import (
     Verify2FASerializer, Disable2FASerializer, LoginWith2FASerializer,
     get_tokens_for_user,
 )
+from .constants import PARTIAL_TOKEN_PREFIX, RATE_LIMIT_PREFIX, RATE_LIMIT_ATTEMPTS, RATE_LIMIT_WINDOW
 
 
 class Setup2FAView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = Verify2FASerializer
 
     @extend_schema(tags=['User'], responses={200: None})
     def post(self, request):
@@ -138,21 +141,19 @@ class LoginWith2FAView(APIView):
     def post(self, request):
         serializer = LoginWith2FASerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        identifier = serializer.validated_data.get('identifier')
-        operator_id = serializer.validated_data.get('operator_id')
+        partial_token = serializer.validated_data.get('partial_token')
         code = serializer.validated_data['code']
 
+        user_id = cache.get(f"{PARTIAL_TOKEN_PREFIX}{partial_token}")
+        if not user_id:
+            return Response(
+                {"success": False, "message": "Invalid or expired session. Please log in again."},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
         try:
-            if operator_id:
-                profile = (
-                    OperatorAdminProfile.objects.select_related('user').get(operator_id=operator_id)
-                    if operator_id.startswith('OA-')
-                    else OperatorProfile.objects.select_related('user').get(operator_id=operator_id)
-                )
-                user = profile.user
-            else:
-                user = CustomUser.objects.get(Q(email=identifier) | Q(phone=identifier))
-        except (CustomUser.DoesNotExist, OperatorProfile.DoesNotExist, OperatorAdminProfile.DoesNotExist):
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
             return Response(
                 {"success": False, "message": "Invalid credentials"},
                 status=status.HTTP_401_UNAUTHORIZED
@@ -175,6 +176,8 @@ class LoginWith2FAView(APIView):
                 {"success": False, "message": "Invalid or expired code"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        cache.delete(f"{PARTIAL_TOKEN_PREFIX}{partial_token}")
 
         tokens = get_tokens_for_user(user)
         return Response(
