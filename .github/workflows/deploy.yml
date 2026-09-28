@@ -28,8 +28,8 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push image
-        id: build-push
+      - name: Build, tag, and push backend image
+        id: build-backend
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ecobin-backend
@@ -41,22 +41,42 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
+      - name: Build, tag, and push nginx image
+        id: build-nginx
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ecobin-nginx
+          IMAGE_TAG: ${{ github.sha }}
+        working-directory: ecobin_backend/nginx
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -f Dockerfile .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "nginx_image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
       - name: Download task definition
         run: |
-          aws ecs describe-task-definition --task-definition ecobin-web \
+          aws ecs describe-task-definition --task-definition ecobin-task \
             --query 'taskDefinition' --output json > task-definition.json
 
       - name: Render new task definition
         id: render
         run: |
-          IMAGE="${{ steps.build-push.outputs.image }}"
-          # Replace the image URI in the task definition
+          BACKEND_IMAGE="${{ steps.build-backend.outputs.image }}"
+          NGINX_IMAGE="${{ steps.build-nginx.outputs.nginx_image }}"
+          # Replace the image URIs in the task definition
           cat task-definition.json | python3 -c "
           import sys, json
           data = json.load(sys.stdin)
           for container in data['containerDefinitions']:
-              if container['name'] == 'web':
-                  container['image'] = '$IMAGE'
+              if container['name'] == 'backend':
+                  container['image'] = '$BACKEND_IMAGE'
+              elif container['name'] == 'celery-worker':
+                  container['image'] = '$BACKEND_IMAGE'
+              elif container['name'] == 'celery-beat':
+                  container['image'] = '$BACKEND_IMAGE'
+              elif container['name'] == 'nginx':
+                  container['image'] = '$NGINX_IMAGE'
           # Remove incompatible fields for register-task-definition
           data.pop('taskDefinitionArn', None)
           data.pop('revision', None)
@@ -71,5 +91,5 @@ jobs:
       - name: Deploy to Amazon ECS
         run: |
           aws ecs register-task-definition --cli-input-json file://new-task-definition.json
-          REVISION=$(aws ecs describe-task-definition --task-definition ecobin-web --query 'taskDefinition.revision' --output text)
-          aws ecs update-service --cluster ecobin-cluster --service ecobin-web-service --task-definition ecobin-web:$REVISION --force-new-deployment
+          REVISION=$(aws ecs describe-task-definition --task-definition ecobin-task --query 'taskDefinition.revision' --output text)
+          aws ecs update-service --cluster ecobin-cluster --service ecobin-service --task-definition ecobin-task:$REVISION --force-new-deployment
