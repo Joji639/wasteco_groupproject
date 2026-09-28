@@ -4,7 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from urllib.parse import parse_qs
-
+from accounts.models import CustomUser
 
 class JWTAuthMiddleware(BaseMiddleware):
     """
@@ -30,7 +30,7 @@ class JWTAuthMiddleware(BaseMiddleware):
         try:
             access_token = AccessToken(token)
             user_id = access_token['user_id']
-            from accounts.models import CustomUser
+            
             return CustomUser.objects.get(id=user_id)
         except (InvalidToken, TokenError, KeyError, Exception):
             return AnonymousUser()

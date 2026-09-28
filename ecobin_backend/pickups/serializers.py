@@ -155,7 +155,20 @@ class RejectPickupSerializer(serializers.Serializer):
 
 
 class AssignOperatorSerializer(serializers.Serializer):
-    operator_id = serializers.UUIDField(required=True)
+    operator_id = serializers.CharField(max_length=20, required=True)
+
+    def validate_operator_id(self, value):
+        from accounts.models import OperatorProfile
+        value = value.strip().upper()
+        try:
+            profile = OperatorProfile.objects.select_related('user').get(operator_id=value)
+        except OperatorProfile.DoesNotExist:
+            raise serializers.ValidationError("Operator not found.")
+        if not profile.user.is_active:
+            raise serializers.ValidationError("The selected operator is not active.")
+        if not profile.is_verified:
+            raise serializers.ValidationError("The selected operator is not verified.")
+        return profile.user
 
 
 # ---------------------------------------------------------------------------
@@ -269,17 +282,20 @@ class AreaSerializer(serializers.ModelSerializer):
 
 
 class AreaAssignmentCreateSerializer(serializers.Serializer):
-    operator_id = serializers.UUIDField()
+    operator_id = serializers.CharField(max_length=20)
 
     def validate_operator_id(self, value):
-        from accounts.models import CustomUser
+        from accounts.models import OperatorProfile
+        value = value.strip().upper()
         try:
-            operator = CustomUser.objects.get(id=value)
-        except CustomUser.DoesNotExist:
+            profile = OperatorProfile.objects.select_related('user').get(operator_id=value)
+        except OperatorProfile.DoesNotExist:
             raise serializers.ValidationError("Operator not found.")
-        if operator.base_role != 'operator':
-            raise serializers.ValidationError("User is not an operator.")
-        return value
+        if not profile.user.is_active:
+            raise serializers.ValidationError("The selected operator is not active.")
+        if not profile.is_verified:
+            raise serializers.ValidationError("The selected operator is not verified.")
+        return profile.user
 
 
 class AreaAssignmentSerializer(serializers.ModelSerializer):
