@@ -3,10 +3,15 @@ name: Deploy to ECS
 on:
   push:
     branches: [main]
+  workflow_run:
+    workflows: ["Test on Developer Branch"]
+    types:
+      - completed
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'push'
 
     steps:
       - name: Checkout code
