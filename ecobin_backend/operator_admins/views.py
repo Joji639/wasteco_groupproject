@@ -502,7 +502,7 @@ class OperatorAdminPickupAssignView(APIView):
         serializer = AssignOperatorSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        operator_id = serializer.validated_data['operator_id']
+        operator_user = serializer.validated_data['operator_id']
 
         with transaction.atomic():
             try:
@@ -524,38 +524,7 @@ class OperatorAdminPickupAssignView(APIView):
                     status=status.HTTP_409_CONFLICT
                 )
 
-            try:
-                operator_user = CustomUser.objects.get(id=operator_id)
-            except CustomUser.DoesNotExist:
-                return Response(
-                    {"success": False, "message": "Operator not found."},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-
-            if operator_user.base_role != 'operator':
-                return Response(
-                    {"success": False, "message": "The selected user is not an operator."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            if not operator_user.is_active:
-                return Response(
-                    {"success": False, "message": "The selected operator is not active."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            try:
-                operator_profile = operator_user.operator_profile
-                if not operator_profile.is_verified:
-                    return Response(
-                        {"success": False, "message": "The selected operator is not verified."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-            except OperatorProfile.DoesNotExist:
-                return Response(
-                    {"success": False, "message": "Operator profile not found."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            operator_profile = operator_user.operator_profile
 
             pickup.status = 'ASSIGNED'
             pickup.assigned_operator = operator_user
@@ -998,9 +967,9 @@ class AreaAssignOperatorView(APIView):
         serializer = AreaAssignmentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        operator_id = serializer.validated_data['operator_id']
+        operator_user = serializer.validated_data['operator_id']
 
-        if AreaAssignment.objects.filter(area=area, operator_id=operator_id).exists():
+        if AreaAssignment.objects.filter(area=area, operator_id=operator_user.id).exists():
             return Response(
                 {"success": False, "message": "Operator is already assigned to this area."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -1008,7 +977,7 @@ class AreaAssignOperatorView(APIView):
 
         assignment = AreaAssignment.objects.create(
             area=area,
-            operator_id=operator_id,
+            operator_id=operator_user.id,
             assigned_by=request.user,
         )
 

@@ -23,7 +23,7 @@ from .serializers import (
     PaymentStatusResponseSerializer,
 )
 from .razorpay_service import create_razorpay_order, verify_razorpay_signature
-
+from pickups.models import PickupTracking
 logger = logging.getLogger(__name__)
 
 
@@ -149,7 +149,7 @@ class OperatorRecordCollectionView(APIView):
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
-            from pickups.models import PickupTracking
+            
             try:
                 tracking = PickupTracking.objects.get(
                     pickup_request=pickup,

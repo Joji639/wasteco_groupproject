@@ -340,7 +340,7 @@ class OperatorAdminAuthTests(TestCase):
     def test_operator_admin_assign_allowed(self):
         pickup = _create_pickup(self.user, status='ACCEPTED')
         _auth(self.client, self.oa)
-        r = self.client.patch(API + f"pickups/{pickup.id}/assign-operator/", {"operator_id": str(self.operator.id)})
+        r = self.client.patch(API + f"pickups/{pickup.id}/assign-operator/", {"operator_id": self.operator.operator_profile.operator_id})
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 
 
@@ -482,36 +482,52 @@ class OperatorAdminPickupAssignTests(TestCase):
         self.operator = _create_operator(email="asgn_op@test.com", phone="+919000000352")
         _auth(self.client, self.oa)
 
-    def test_assign_operator_to_accepted_pickup(self):
+    def test_assign_operator_to_accepted_pickup_using_operator_id(self):
+        """Test assigning operator using the human-readable operator_id (e.g., OP-992A3B8F)"""
         pickup = _create_pickup(self.user, status='ACCEPTED')
+        operator_id_str = self.operator.operator_profile.operator_id
         r = self.client.patch(API + f"pickups/{pickup.id}/assign-operator/", {
-            "operator_id": str(self.operator.id)
+            "operator_id": operator_id_str
         })
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         pickup.refresh_from_db()
         self.assertEqual(pickup.status, 'ASSIGNED')
         self.assertEqual(pickup.assigned_operator, self.operator)
+        self.assertEqual(r.data["data"]["assigned_operator"]["operator_id"], operator_id_str)
+
+    def test_assign_operator_case_insensitive(self):
+        """Test that operator_id is case-insensitive"""
+        pickup = _create_pickup(self.user, status='ACCEPTED')
+        operator_id_str = self.operator.operator_profile.operator_id.lower()
+        r = self.client.patch(API + f"pickups/{pickup.id}/assign-operator/", {
+            "operator_id": operator_id_str
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        pickup.refresh_from_db()
+        self.assertEqual(pickup.assigned_operator, self.operator)
 
     def test_assign_operator_to_pending_pickup_fails(self):
         pickup = _create_pickup(self.user)
+        operator_id_str = self.operator.operator_profile.operator_id
         r = self.client.patch(API + f"pickups/{pickup.id}/assign-operator/", {
-            "operator_id": str(self.operator.id)
+            "operator_id": operator_id_str
         })
         self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
 
     def test_assign_operator_to_rejected_pickup_fails(self):
         pickup = _create_pickup(self.user, status='REJECTED')
+        operator_id_str = self.operator.operator_profile.operator_id
         r = self.client.patch(API + f"pickups/{pickup.id}/assign-operator/", {
-            "operator_id": str(self.operator.id)
+            "operator_id": operator_id_str
         })
         self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
 
     def test_assign_nonexistent_operator_fails(self):
         pickup = _create_pickup(self.user, status='ACCEPTED')
         r = self.client.patch(API + f"pickups/{pickup.id}/assign-operator/", {
-            "operator_id": "00000000-0000-0000-0000-000000000000"
+            "operator_id": "OP-NONEXIST"
         })
-        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_assign_user_role_fails(self):
         user = _create_user(email="asgn_other@test.com", phone="+919000000353")
@@ -525,8 +541,9 @@ class OperatorAdminPickupAssignTests(TestCase):
         self.operator.is_active = False
         self.operator.save(update_fields=['is_active'])
         pickup = _create_pickup(self.user, status='ACCEPTED')
+        operator_id_str = self.operator.operator_profile.operator_id
         r = self.client.patch(API + f"pickups/{pickup.id}/assign-operator/", {
-            "operator_id": str(self.operator.id)
+            "operator_id": operator_id_str
         })
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -534,14 +551,15 @@ class OperatorAdminPickupAssignTests(TestCase):
         self.operator.operator_profile.is_verified = False
         self.operator.operator_profile.save(update_fields=['is_verified'])
         pickup = _create_pickup(self.user, status='ACCEPTED')
+        operator_id_str = self.operator.operator_profile.operator_id
         r = self.client.patch(API + f"pickups/{pickup.id}/assign-operator/", {
-            "operator_id": str(self.operator.id)
+            "operator_id": operator_id_str
         })
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_assign_not_found(self):
         r = self.client.patch(API + "pickups/00000000-0000-0000-0000-000000000000/assign-operator/", {
-            "operator_id": str(self.operator.id)
+            "operator_id": self.operator.operator_profile.operator_id
         })
         self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
 

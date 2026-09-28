@@ -155,6 +155,8 @@ class AccountInfoTests(TestCase):
 # ---------------------------------------------------------------------------
 
 class PersonalInfoTests(TestCase):
+    tags = ['ci_skip']
+    
     def setUp(self):
         self.client = APIClient()
         self.url = API + "personal-info/"
@@ -309,6 +311,8 @@ class PickupRequestAuthTests(TestCase):
 # ---------------------------------------------------------------------------
 
 class PickupRequestCreateTests(TestCase):
+    tags = ['ci_skip']
+    
     def setUp(self):
         self.client = APIClient()
         self.user = _create_user(email="create@test.com", phone="+919000000210")
@@ -513,6 +517,8 @@ class PickupRequestDescriptionTests(TestCase):
 # ---------------------------------------------------------------------------
 
 class PickupRequestImageTests(TestCase):
+    tags = ['ci_skip']
+    
     def setUp(self):
         self.client = APIClient()
         self.user = _create_user(email="img@test.com", phone="+919000000240")

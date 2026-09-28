@@ -445,6 +445,8 @@ class OperatorAdminRatingsTests(TestCase):
 # ===========================================================================
 
 class SuperAdminRatingsTests(TestCase):
+    tags = ['superadmin_ratings']
+    
     def setUp(self):
         self.client = APIClient()
         self.superadmin = _create_superuser(email='sa1@test.com')

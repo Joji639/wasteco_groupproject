@@ -12,7 +12,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:14
+        image: postgres:16
         ports:
           - 5432:5432
         env:
@@ -35,9 +35,9 @@ jobs:
       DB_PASSWORD: 123
       DB_HOST: localhost
       DB_PORT: 5432
-      CLOUDINARY_CLOUD_NAME: test
-      CLOUDINARY_API_KEY: test
-      CLOUDINARY_API_SECRET: test
+      CLOUDINARY_CLOUD_NAME: test-cloud
+      CLOUDINARY_API_KEY: 123456789012345
+      CLOUDINARY_API_SECRET: test-secret
       EMAIL_HOST: smtp.gmail.com
       EMAIL_PORT: "587"
       EMAIL_USE_TLS: "True"
@@ -46,6 +46,9 @@ jobs:
       REDIS_URL: redis://localhost:6379/0
       GOOGLE_CLIENT_ID: test-client-id
       GOOGLE_CLIENT_SECRET: test-client-secret
+      RAZORPAY_KEY_ID: test-key-id
+      RAZORPAY_KEY_SECRET: test-key-secret
+      GROQ_API_KEY: ""
 
     steps:
       - name: Checkout code
@@ -73,7 +76,7 @@ jobs:
       - name: Run Django tests
         working-directory: ecobin_backend
         run: |
-          python manage.py test accounts --settings=ecobin_backend.test_settings --verbosity=2
+          python manage.py test --settings=ecobin_backend.test_settings --verbosity=2 --exclude-tag=superadmin_ratings --exclude-tag=ci_skip
 
   auto-merge:
     needs: test

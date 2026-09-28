@@ -5,6 +5,9 @@ import math
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth.models import AnonymousUser
+from .models import ServiceRequest
+from django.utils import timezone
+from .models import ServiceRequest
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +163,7 @@ class ServiceTrackingConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def _check_access(self):
-        from .models import ServiceRequest
+        
         try:
             service = ServiceRequest.objects.get(id=self.service_id)
         except ServiceRequest.DoesNotExist:
@@ -175,7 +178,6 @@ class ServiceTrackingConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def _is_technician(self):
-        from .models import ServiceRequest
         try:
             service = ServiceRequest.objects.get(id=self.service_id)
             return (
@@ -187,8 +189,6 @@ class ServiceTrackingConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def _update_technician_location(self, lat, lng):
-        from .models import ServiceRequest
-        from django.utils import timezone
         try:
             service = ServiceRequest.objects.get(
                 id=self.service_id,
@@ -204,8 +204,8 @@ class ServiceTrackingConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def _mark_arrived(self):
-        from .models import ServiceRequest
-        from django.utils import timezone
+        
+        
         try:
             service = ServiceRequest.objects.get(id=self.service_id)
             service.status = 'ARRIVED'
