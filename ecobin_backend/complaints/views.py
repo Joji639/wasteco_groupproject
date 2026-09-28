@@ -265,45 +265,45 @@ class OperatorAdminAssignComplaintView(APIView):
         operator_id = serializer.validated_data['operator_id']
         admin_profile = request.user.operatoradmin_profile
 
-        try:
-            complaint = Complaint.objects.select_for_update().get(id=complaint_id)
-        except Complaint.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Complaint not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        if complaint.status != 'PENDING':
-            return Response(
-                {"success": False, "message": f"Cannot assign complaint with status '{complaint.status}'. Only PENDING complaints can be assigned."},
-                status=status.HTTP_409_CONFLICT,
-            )
-
-        try:
-            operator_user = CustomUser.objects.get(id=operator_id, base_role='operator')
-        except CustomUser.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Operator not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        if not operator_user.is_active:
-            return Response(
-                {"success": False, "message": "The selected operator is not active."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if not OperatorProfile.objects.filter(
-            user=operator_user,
-            assigned_admin=admin_profile,
-            is_verified=True,
-        ).exists():
-            return Response(
-                {"success": False, "message": "Operator is not within your authorized scope or not verified."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         with transaction.atomic():
+            try:
+                complaint = Complaint.objects.select_for_update().get(id=complaint_id)
+            except Complaint.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Complaint not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            if complaint.status != 'PENDING':
+                return Response(
+                    {"success": False, "message": f"Cannot assign complaint with status '{complaint.status}'. Only PENDING complaints can be assigned."},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            try:
+                operator_user = CustomUser.objects.get(id=operator_id, base_role='operator')
+            except CustomUser.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Operator not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            if not operator_user.is_active:
+                return Response(
+                    {"success": False, "message": "The selected operator is not active."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if not OperatorProfile.objects.filter(
+                user=operator_user,
+                assigned_admin=admin_profile,
+                is_verified=True,
+            ).exists():
+                return Response(
+                    {"success": False, "message": "Operator is not within your authorized scope or not verified."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
             complaint.assigned_operator = operator_user
             complaint.status = 'ASSIGNED'
             complaint.assigned_at = timezone.now()
@@ -393,27 +393,27 @@ class OperatorComplaintStatusView(APIView):
 
         new_status = serializer.validated_data['status']
 
-        try:
-            complaint = Complaint.objects.select_for_update().get(
-                id=complaint_id,
-                assigned_operator=request.user,
-            )
-        except Complaint.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Complaint not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        if not complaint.can_transition_to(new_status):
-            return Response(
-                {
-                    "success": False,
-                    "message": f"Cannot transition from '{complaint.status}' to '{new_status}'.",
-                },
-                status=status.HTTP_409_CONFLICT,
-            )
-
         with transaction.atomic():
+            try:
+                complaint = Complaint.objects.select_for_update().get(
+                    id=complaint_id,
+                    assigned_operator=request.user,
+                )
+            except Complaint.DoesNotExist:
+                return Response(
+                    {"success": False, "message": "Complaint not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            if not complaint.can_transition_to(new_status):
+                return Response(
+                    {
+                        "success": False,
+                        "message": f"Cannot transition from '{complaint.status}' to '{new_status}'.",
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
+
             complaint.status = new_status
             if new_status == 'RESOLVED':
                 complaint.resolved_at = timezone.now()
