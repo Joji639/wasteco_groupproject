@@ -12,7 +12,7 @@ from accounts.serializers import (
     OperatorOnboardingSerializer, OperatorPersonalInfoSerializer,
     AccountInfoSerializer, ChangePasswordSerializer, LogoutSerializer,
 )
-from accounts.permissions import IsStaffRole, IsApprovedStaff
+from accounts.permissions import IsStaffRole, IsApprovedStaff, _in_group
 
 
 class OperatorOnboardingView(APIView):

@@ -1,5 +1,6 @@
 """Tests for operators app — Operator onboarding and profile APIs."""
 
+import uuid
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -9,7 +10,7 @@ from rest_framework import status
 
 from accounts.models import CustomUser, UserProfile, OperatorProfile, OperatorAdminProfile, OperatorOnboarding
 from accounts.serializers import get_tokens_for_user
-from pickups.models import PickupRequest
+from pickups.models import PickupRequest, PickupTracking
 
 API = "/operators/"
 
@@ -436,3 +437,76 @@ class PickupTrackingStartTests(TestCase):
             "start_location": "MG Road, Kochi",
         }, format="json")
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+# ---------------------------------------------------------------------------
+# 9. TRACKING DETAIL & ACTIVE LIST (regression: _in_group import bug)
+# ---------------------------------------------------------------------------
+
+class PickupTrackingDetailTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.operator = _create_operator(email="detailop@test.com", password="Op1234!")
+        self.user = _create_user(email="detailuser@test.com")
+        self.pickup = _create_pickup(self.user, status='ON_THE_WAY', assigned_operator=self.operator)
+        self.tracking = PickupTracking.objects.create(
+            pickup_request=self.pickup,
+            operator=self.operator,
+            start_place="Ernakulam",
+            start_latitude=9.98,
+            start_longitude=76.30,
+            current_latitude=9.99,
+            current_longitude=76.31,
+            status='EN_ROUTE',
+            progress=0.5,
+        )
+        self.detail_url = f"{API}tracking/{self.tracking.id}/"
+
+    def test_tracking_detail_as_user(self):
+        _auth(self.client, self.user)
+        r = self.client.get(self.detail_url)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertTrue(r.data["success"])
+        self.assertEqual(r.data["data"]["status"], "EN_ROUTE")
+
+    def test_tracking_detail_as_operator(self):
+        _auth(self.client, self.operator)
+        r = self.client.get(self.detail_url)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+
+    def test_tracking_detail_as_admin(self):
+        admin = _create_operator_admin(email="detailadmin@test.com")
+        _auth(self.client, admin)
+        r = self.client.get(self.detail_url)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+
+    def test_tracking_detail_unrelated_user_403(self):
+        stranger = _create_user(email="stranger@test.com")
+        _auth(self.client, stranger)
+        r = self.client.get(self.detail_url)
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_tracking_detail_not_found(self):
+        _auth(self.client, self.user)
+        r = self.client.get(f"{API}tracking/{uuid.uuid4()}/")
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_tracking_active_list_operator(self):
+        _auth(self.client, self.operator)
+        r = self.client.get(f"{API}tracking/active/")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["count"], 1)
+
+    def test_tracking_active_list_user(self):
+        _auth(self.client, self.user)
+        r = self.client.get(f"{API}tracking/active/")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["count"], 1)
+
+    def test_tracking_active_list_excludes_completed(self):
+        self.tracking.status = 'COMPLETED'
+        self.tracking.save()
+        _auth(self.client, self.operator)
+        r = self.client.get(f"{API}tracking/active/")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["count"], 0)

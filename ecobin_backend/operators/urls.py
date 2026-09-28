@@ -8,7 +8,6 @@ from .views import (
     PickupTrackingStartView, PickupTrackingLocationView,
     PickupTrackingStopView, PickupTrackingActiveView,
 )
-from .tracking import OperatorUpdateLocationView, OperatorGetLocationView
 
 urlpatterns = [
     path('onboarding/', OperatorOnboardingView.as_view(), name='operator-onboarding'),
@@ -18,8 +17,6 @@ urlpatterns = [
     path('logout/', OperatorLogoutView.as_view(), name='operator-logout'),
     path('reviews/', OperatorReviewsView.as_view(), name='operator-reviews'),
     path('reviews/summary/', OperatorRatingSummaryView.as_view(), name='operator-rating-summary'),
-    path('location/update/', OperatorUpdateLocationView.as_view(), name='operator-location-update'),
-    path('location/<uuid:pickup_id>/', OperatorGetLocationView.as_view(), name='operator-location-get'),
     path('assigned-areas/', OperatorAssignedAreasView.as_view(), name='operator-assigned-areas'),
     path('waste-collection/collect/', WasteCollectionCreateView.as_view(), name='operator-waste-collect'),
     path('waste-collection/fail/', WasteCollectionFailureView.as_view(), name='operator-waste-fail'),
