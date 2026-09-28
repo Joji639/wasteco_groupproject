@@ -82,3 +82,16 @@ class PaymentStatusResponseSerializer(serializers.Serializer):
     razorpay_payment_id = serializers.CharField()
     checkout_url = serializers.URLField(required=False)
     created_at = serializers.DateTimeField()
+
+
+class OrderStatusDataSerializer(serializers.Serializer):
+    paid = serializers.BooleanField()
+    payment_status = serializers.CharField()
+    collection_status = serializers.CharField()
+    pickup_status = serializers.CharField(allow_null=True, required=False)
+    amount = serializers.CharField()
+
+
+class OrderStatusResponseSerializer(serializers.Serializer):
+    success = serializers.BooleanField()
+    data = OrderStatusDataSerializer()

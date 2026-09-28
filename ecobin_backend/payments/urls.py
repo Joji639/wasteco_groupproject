@@ -8,6 +8,8 @@ from .views import (
     PaymentStatusView,
     UserPickupPaymentsView,
     razorpay_webhook,
+    RazorpayOrderStatusView,
+    checkout_page,
 )
 
 urlpatterns = [
@@ -19,4 +21,6 @@ urlpatterns = [
     path('user/pickups/<uuid:pickup_id>/payment/status/', PaymentStatusView.as_view(), name='payment-status'),
     path('user/payments/', UserPickupPaymentsView.as_view(), name='user-payments-list'),
     path('razorpay/webhook/', razorpay_webhook, name='razorpay-webhook'),
+    path('order/<str:razorpay_order_id>/status/', RazorpayOrderStatusView.as_view(), name='razorpay-order-status'),
+    path('checkout/<str:razorpay_order_id>/', checkout_page, name='payment-checkout-page'),
 ]

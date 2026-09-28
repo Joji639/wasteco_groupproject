@@ -19,6 +19,7 @@ def create_razorpay_order(amount_paise, currency='INR', receipt=None, notes=None
     payload = {
         'amount': int(amount_paise),
         'currency': currency,
+        'payment_capture': 1,
     }
     if receipt:
         payload['receipt'] = receipt
@@ -27,6 +28,21 @@ def create_razorpay_order(amount_paise, currency='INR', receipt=None, notes=None
 
     order = client.order.create(payload)
     return order
+
+
+def fetch_order(order_id):
+    client = get_razorpay_client()
+    return client.orders.fetch(order_id)
+
+
+def fetch_order_payments(order_id):
+    client = get_razorpay_client()
+    return client.payment.fetch_all({'order_id': order_id})
+
+
+def capture_payment(payment_id, amount_paise):
+    client = get_razorpay_client()
+    return client.payment.capture(payment_id, int(amount_paise))
 
 
 def verify_razorpay_signature(body, signature, secret=None):

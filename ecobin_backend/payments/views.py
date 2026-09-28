@@ -1,10 +1,14 @@
 import uuid
 import json
 import logging
+import io
+import base64
 
+import qrcode
 from django.conf import settings
 from django.db import transaction
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -20,9 +24,12 @@ from .models import WasteCollection, Payment
 from .serializers import (
     WasteCollectionSerializer, CreateCollectionSerializer,
     PaymentSerializer, RazorpayCheckoutResponseSerializer,
-    PaymentStatusResponseSerializer,
+    PaymentStatusResponseSerializer, OrderStatusResponseSerializer,
 )
-from .razorpay_service import create_razorpay_order, verify_razorpay_signature
+from .razorpay_service import (
+    create_razorpay_order, verify_razorpay_signature,
+    fetch_order, fetch_order_payments, capture_payment,
+)
 from pickups.models import PickupTracking
 logger = logging.getLogger(__name__)
 
@@ -251,6 +258,16 @@ class OperatorCollectionDetailView(APIView):
         )
 
 
+def _make_qr_data_url(data):
+    qr = qrcode.QRCode(border=2, box_size=8)
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color='black', back_color='white')
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    return 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()
+
+
 class OperatorInitiatePaymentView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsOperatorRole]
     serializer_class = RazorpayCheckoutResponseSerializer
@@ -374,6 +391,14 @@ class OperatorInitiatePaymentView(APIView):
             "checkout_url": f"https://checkout.razorpay.com/v1/checkout.js#order_id={order['id']}",
             "qr_payload": qr_b64,
         }
+        checkout_page_path = reverse('payment-checkout-page', args=[order['id']])
+        checkout_page_url = request.build_absolute_uri(checkout_page_path)
+        response_data["checkout_page_url"] = checkout_page_url
+        try:
+            response_data["qr_image"] = _make_qr_data_url(checkout_page_url)
+        except Exception as e:
+            logger.warning("QR generation failed: %s", e)
+            response_data["qr_image"] = None
         if collection.pickup_request_id:
             response_data["pickup_request_id"] = str(collection.pickup_request_id)
         elif collection.scheduled_pickup_id:
@@ -387,6 +412,73 @@ class OperatorInitiatePaymentView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+def _finalize_paid_payment(payment, razorpay_payment_id=''):
+    with transaction.atomic():
+        payment.payment_status = 'CAPTURED'
+        if razorpay_payment_id:
+            payment.razorpay_payment_id = razorpay_payment_id
+        payment.save(update_fields=['payment_status', 'razorpay_payment_id', 'updated_at'])
+
+        collection = payment.collection
+        collection.status = 'PAID'
+        collection.save(update_fields=['status', 'updated_at'])
+
+        pickup = collection.pickup_request
+        if pickup:
+            pickup.status = 'COMPLETED'
+            pickup.save(update_fields=['status', 'updated_at'])
+            PickupTracking.objects.filter(
+                pickup_request=pickup,
+                status__in=('COMPLETED', 'COLLECTING'),
+            ).update(status='PAID')
+
+
+def sync_payment_with_razorpay(payment):
+    """
+    Webhook-free payment confirmation: ask Razorpay whether this order has
+    been paid (or capture an authorized test payment) and update local
+    records accordingly. Returns True if records were updated to PAID.
+    """
+    if payment.payment_status == 'CAPTURED' or not payment.razorpay_order_id:
+        return False
+
+    try:
+        order = fetch_order(payment.razorpay_order_id)
+        amount = int(order.get('amount') or 0)
+        amount_paid = int(order.get('amount_paid') or 0)
+        order_paid = order.get('status') == 'paid' or (amount > 0 and amount_paid >= amount)
+
+        items = []
+        try:
+            items = (fetch_order_payments(payment.razorpay_order_id) or {}).get('items', [])
+        except Exception as exc:
+            logger.warning("Could not list payments for order %s: %s", payment.razorpay_order_id, exc)
+
+        for p in items:
+            if p.get('status') == 'captured':
+                _finalize_paid_payment(payment, p.get('id', ''))
+                return True
+
+        if order_paid:
+            payment_ref = items[0].get('id', '') if items else ''
+            _finalize_paid_payment(payment, payment_ref)
+            return True
+
+        for p in items:
+            if p.get('status') == 'authorized':
+                try:
+                    capture_payment(p['id'], amount or int(payment.amount * 100))
+                except Exception as exc:
+                    logger.warning("Capture failed for payment %s: %s", p.get('id'), exc)
+                    continue
+                _finalize_paid_payment(payment, p.get('id', ''))
+                return True
+    except Exception as exc:
+        logger.warning("Razorpay sync failed for order %s: %s", payment.razorpay_order_id, exc)
+
+    return False
 
 
 class PaymentStatusView(APIView):
@@ -435,6 +527,13 @@ class PaymentStatusView(APIView):
         checkout_url = None
         if payment.payment_status in ('PENDING', 'CREATED'):
             checkout_url = f"https://checkout.razorpay.com/v1/checkout.js#order_id={payment.razorpay_order_id}"
+            sync_payment_with_razorpay(payment)
+            payment.refresh_from_db()
+            collection.refresh_from_db()
+            if collection.pickup_request_id:
+                pickup.refresh_from_db()
+            if payment.payment_status == 'CAPTURED':
+                checkout_url = None
 
         data = {
             'payment_id': str(payment.id),
@@ -565,3 +664,166 @@ def razorpay_webhook(request):
         logger.warning("Payment failed for order_id: %s", razorpay_order_id)
 
     return JsonResponse({"status": "ok"}, status=200)
+
+
+class RazorpayOrderStatusView(APIView):
+    """
+    Public (order-id-gated) status check used by the hosted checkout page.
+    Syncs local records from Razorpay so payment completion works without
+    a webhook.
+    """
+    authentication_classes = []
+    permission_classes = []
+    serializer_class = OrderStatusResponseSerializer
+
+    @extend_schema(tags=['User - Payments'])
+    def get(self, request, razorpay_order_id):
+        payment = Payment.objects.select_related(
+            'collection', 'collection__pickup_request',
+        ).filter(razorpay_order_id=razorpay_order_id).first()
+        if payment is None:
+            return Response(
+                {"success": False, "message": "Payment not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        sync_payment_with_razorpay(payment)
+        payment.refresh_from_db()
+        collection = payment.collection
+
+        return Response(
+            {
+                "success": True,
+                "data": {
+                    "paid": payment.payment_status == 'CAPTURED',
+                    "payment_status": payment.payment_status,
+                    "collection_status": collection.status,
+                    "pickup_status": collection.pickup_request.status if collection.pickup_request_id else None,
+                    "amount": str(payment.amount),
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+_CHECKOUT_PAGE_HTML = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EcoBin Secure Payment</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background:#f4f6f8; margin:0; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+  .card { background:#fff; border-radius:14px; box-shadow:0 4px 18px rgba(0,0,0,.12); padding:32px 28px; width:100%; max-width:400px; text-align:center; }
+  .brand { color:#16a34a; font-weight:700; font-size:20px; margin-bottom:4px; }
+  h1 { font-size:18px; margin:8px 0 2px; }
+  .amount { font-size:32px; font-weight:700; margin:12px 0; }
+  #status { min-height:22px; font-size:14px; color:#555; margin:10px 0; }
+  #status.ok { color:#16a34a; font-weight:600; }
+  #status.err { color:#dc2626; }
+  button { width:100%; padding:13px; border:0; border-radius:9px; background:#16a34a; color:#fff; font-size:16px; font-weight:600; cursor:pointer; margin-top:8px; }
+  button:disabled { background:#9ca3af; }
+  .test { font-size:12px; color:#9ca3af; margin-top:14px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">EcoBin</div>
+  <h1>Waste Collection Payment</h1>
+  <div class="amount">&#8377;__AMOUNT__</div>
+  <div id="status">Preparing checkout...</div>
+  <button id="pay" disabled>Pay Now</button>
+  <div class="test">Test mode &mdash; no real money is charged.</div>
+</div>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  var KEY = "__KEY__";
+  var ORDER = "__ORDER_ID__";
+  var AMOUNT = __AMOUNT_PAISE__;
+  var statusEl = document.getElementById('status');
+  var payBtn = document.getElementById('pay');
+  var polling = null;
+  var opened = false;
+
+  function setStatus(text, cls) { statusEl.textContent = text; statusEl.className = cls || ''; }
+
+  function showPaid() {
+    if (polling) clearInterval(polling);
+    setStatus('Payment successful! You can close this page.', 'ok');
+    payBtn.disabled = true;
+    payBtn.textContent = 'Paid';
+  }
+
+  function poll() {
+    fetch('/payments/order/' + ORDER + '/status/')
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.success && j.data && j.data.paid) { showPaid(); }
+        else if (j.success && j.data) { setStatus('Waiting for payment... (status: ' + j.data.payment_status + ')'); }
+      })
+      .catch(function () {});
+  }
+
+  function openCheckout() {
+    if (opened) return;
+    opened = true;
+    try {
+      var rzp = new Razorpay({
+        key: KEY,
+        amount: AMOUNT,
+        currency: 'INR',
+        order_id: ORDER,
+        name: 'EcoBin',
+        description: 'Waste collection payment',
+        theme: { color: '#16a34a' },
+        handler: function () { setStatus('Payment submitted, confirming...'); poll(); },
+        modal: { ondismiss: function () { opened = false; setStatus('Checkout closed. Tap Pay Now to retry.'); payBtn.disabled = false; } }
+      });
+      rzp.on('payment.failed', function () { opened = false; setStatus('Payment failed. Please try again.', 'err'); payBtn.disabled = false; });
+      rzp.open();
+      setStatus('Complete the payment in the checkout window (test mode).');
+    } catch (e) {
+      opened = false;
+      setStatus('Could not open checkout automatically. Tap Pay Now.', 'err');
+      payBtn.disabled = false;
+    }
+  }
+
+  payBtn.addEventListener('click', openCheckout);
+  polling = setInterval(poll, 2000);
+  poll();
+  setTimeout(openCheckout, 300);
+</script>
+</body>
+</html>
+"""
+
+
+def checkout_page(request, razorpay_order_id):
+    payment = Payment.objects.select_related('collection').filter(
+        razorpay_order_id=razorpay_order_id,
+    ).first()
+    if payment is None:
+        return HttpResponse("<h3>Invalid or expired payment link.</h3>", status=404, content_type='text/html')
+
+    sync_payment_with_razorpay(payment)
+    payment.refresh_from_db()
+    if payment.payment_status == 'CAPTURED':
+        return HttpResponse(
+            "<!doctype html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'>"
+            "<title>EcoBin Payment</title></head>"
+            "<body style=\"font-family:sans-serif;text-align:center;padding:60px 20px;\">"
+            "<h2 style='color:#16a34a;'>&#10003; Payment successful</h2>"
+            f"<p>Amount: &#8377;{payment.amount}</p>"
+            "<p>You can close this page.</p></body></html>",
+            content_type='text/html',
+        )
+
+    html = (
+        _CHECKOUT_PAGE_HTML
+        .replace('__AMOUNT__', str(payment.amount))
+        .replace('__KEY__', settings.RAZORPAY_KEY_ID)
+        .replace('__ORDER_ID__', razorpay_order_id)
+        .replace('__AMOUNT_PAISE__', str(int(payment.amount * 100)))
+    )
+    return HttpResponse(html, content_type='text/html')

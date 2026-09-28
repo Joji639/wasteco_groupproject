@@ -514,3 +514,138 @@ class WasteCollectionModelTests(TestCase):
         )
         self.assertEqual(collection.e_waste_amount, Decimal('30.00'))
         self.assertEqual(collection.total_amount, Decimal('30.00'))
+
+
+# ===========================================================================
+# WEBHOOK-FREE PAYMENT SYNC + HOSTED CHECKOUT PAGE
+# ===========================================================================
+
+class WebhookFreePaymentSyncTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.operator = _create_operator(email='sync_op@test.com')
+        self.user = _create_user(email='sync_user@test.com')
+        self.pickup = _create_pickup(self.user, status='COLLECTED', assigned_operator=self.operator)
+        self.collection = WasteCollection.objects.create(
+            pickup_request=self.pickup, operator=self.operator,
+            plastic_kg=Decimal('2'), e_waste_kg=Decimal('0'),
+            payment_method='ONLINE', status='AMOUNT_DUE',
+        )
+        self.payment = Payment.objects.create(
+            collection=self.collection,
+            amount=Decimal('10.00'),
+            currency='INR',
+            payment_method='ONLINE',
+            payment_status='CREATED',
+            razorpay_order_id='order_sync_test',
+        )
+
+    @patch('payments.views.fetch_order_payments')
+    @patch('payments.views.fetch_order')
+    def test_status_sync_marks_paid_when_order_paid(self, mock_fetch, mock_payments):
+        mock_fetch.return_value = {'status': 'paid', 'amount': 1000, 'amount_paid': 1000}
+        mock_payments.return_value = {'items': [{'id': 'pay_xyz', 'status': 'captured'}]}
+        _auth(self.client, self.user)
+        resp = self.client.get(f'{API}user/pickups/{self.pickup.id}/payment/status/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['data']['payment_status'], 'CAPTURED')
+        self.assertEqual(resp.data['data']['pickup_status'], 'COMPLETED')
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.payment_status, 'CAPTURED')
+        self.assertEqual(self.payment.razorpay_payment_id, 'pay_xyz')
+        self.collection.refresh_from_db()
+        self.assertEqual(self.collection.status, 'PAID')
+        self.pickup.refresh_from_db()
+        self.assertEqual(self.pickup.status, 'COMPLETED')
+
+    @patch('payments.views.fetch_order_payments')
+    @patch('payments.views.fetch_order')
+    def test_status_sync_no_change_when_order_not_paid(self, mock_fetch, mock_payments):
+        mock_fetch.return_value = {'status': 'created', 'amount': 1000, 'amount_paid': 0}
+        mock_payments.return_value = {'items': []}
+        _auth(self.client, self.user)
+        resp = self.client.get(f'{API}user/pickups/{self.pickup.id}/payment/status/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['data']['payment_status'], 'CREATED')
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.payment_status, 'CREATED')
+
+    @patch('payments.views.capture_payment')
+    @patch('payments.views.fetch_order_payments')
+    @patch('payments.views.fetch_order')
+    def test_status_sync_captures_authorized_payment(self, mock_fetch, mock_payments, mock_capture):
+        mock_fetch.return_value = {'status': 'created', 'amount': 1000, 'amount_paid': 0}
+        mock_payments.return_value = {'items': [{'id': 'pay_auth', 'status': 'authorized'}]}
+        mock_capture.return_value = {'id': 'pay_auth', 'status': 'captured'}
+        _auth(self.client, self.user)
+        resp = self.client.get(f'{API}user/pickups/{self.pickup.id}/payment/status/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_capture.assert_called_once()
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.payment_status, 'CAPTURED')
+
+    @patch('payments.views.fetch_order')
+    def test_status_sync_razorpay_error_still_returns_200(self, mock_fetch):
+        mock_fetch.side_effect = Exception('network down')
+        _auth(self.client, self.user)
+        resp = self.client.get(f'{API}user/pickups/{self.pickup.id}/payment/status/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data['data']['payment_status'], 'CREATED')
+
+    @patch('payments.views.fetch_order_payments')
+    @patch('payments.views.fetch_order')
+    def test_order_status_endpoint_public_and_syncs(self, mock_fetch, mock_payments):
+        mock_fetch.return_value = {'status': 'paid', 'amount': 1000, 'amount_paid': 1000}
+        mock_payments.return_value = {'items': [{'id': 'pay_pub', 'status': 'captured'}]}
+        resp = self.client.get(f'{API}order/order_sync_test/status/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertTrue(resp.data['data']['paid'])
+        self.assertEqual(resp.data['data']['collection_status'], 'PAID')
+
+    @patch('payments.views.fetch_order')
+    @patch('payments.views.fetch_order_payments')
+    def test_order_status_endpoint_pending(self, mock_payments, mock_fetch):
+        mock_fetch.return_value = {'status': 'created', 'amount': 1000, 'amount_paid': 0}
+        mock_payments.return_value = {'items': []}
+        resp = self.client.get(f'{API}order/order_sync_test/status/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertFalse(resp.data['data']['paid'])
+
+    def test_order_status_endpoint_not_found(self):
+        resp = self.client.get(f'{API}order/order_does_not_exist/status/')
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch('payments.views.fetch_order')
+    @patch('payments.views.fetch_order_payments')
+    def test_checkout_page_renders(self, mock_payments, mock_fetch):
+        mock_fetch.return_value = {'status': 'created', 'amount': 1000, 'amount_paid': 0}
+        mock_payments.return_value = {'items': []}
+        resp = self.client.get(f'{API}checkout/order_sync_test/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn(b'checkout.razorpay.com', resp.content)
+        self.assertIn(b'EcoBin', resp.content)
+        self.assertIn(b'var KEY = "', resp.content)
+        self.assertIn(b'var ORDER = "order_sync_test"', resp.content)
+
+    @patch('payments.views.fetch_order')
+    @patch('payments.views.fetch_order_payments')
+    def test_checkout_page_already_paid_shows_success(self, mock_payments, mock_fetch):
+        self.payment.payment_status = 'CAPTURED'
+        self.payment.save()
+        resp = self.client.get(f'{API}checkout/order_sync_test/')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn(b'Payment successful', resp.content)
+
+    def test_checkout_page_invalid_order_404(self):
+        resp = self.client.get(f'{API}checkout/order_not_real/')
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch('payments.views.create_razorpay_order')
+    def test_initiate_returns_checkout_page_and_qr(self, mock_order):
+        mock_order.return_value = {'id': 'order_qr_test123'}
+        _auth(self.client, self.operator)
+        resp = self.client.post(f'{API}operator/collections/{self.collection.id}/payment/')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertIn('/payments/checkout/order_qr_test123/', resp.data['data']['checkout_page_url'])
+        self.assertTrue(resp.data['data']['qr_image'].startswith('data:image/png;base64,'))
+        self.assertEqual(resp.data['data']['order_id'], 'order_qr_test123')
