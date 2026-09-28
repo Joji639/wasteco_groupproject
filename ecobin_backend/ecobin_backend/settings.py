@@ -65,7 +65,6 @@ INSTALLED_APPS = [
     'complaints',
     'channels',
     'chat',
-    'services',
     'waste',
 ]
 
@@ -263,7 +262,6 @@ SPECTACULAR_SETTINGS = {
         'WasteCollectionStatusEnum': 'payments.models.WasteCollection.STATUS_CHOICES',
         'PaymentStatusEnum': 'payments.models.Payment.PAYMENT_STATUS_CHOICES',
         'TrackingStatusEnum': 'pickups.models.PickupTracking.STATUS_CHOICES',
-        'ServiceRequestStatusEnum': 'services.models.ServiceRequest.STATUS_CHOICES',
     },
     'TAGS': [
         {'name': 'Public', 'description': 'Public endpoints — no authentication required (Register, Login, Password Reset, 2FA Login, Google Auth)'},
@@ -279,7 +277,6 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Chat - Communities', 'description': 'Community group chat — create, list, update, deactivate communities'},
         {'name': 'Chat - Members', 'description': 'Community members — add, remove, list, update permissions'},
         {'name': 'Chat - Messages', 'description': 'Chat messages — paginated message history for communities'},
-        {'name': 'Services', 'description': 'Service tracking endpoints — create, accept, reject, track service requests'},
         {'name': 'Complaints', 'description': 'Complaint management endpoints — create, list, assign, and resolve complaints'},
         {'name': 'Waste Scanner', 'description': 'AI waste classification — upload a photo and get plastic/e-waste/neither classification'},
     ],

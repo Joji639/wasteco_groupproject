@@ -18,11 +18,10 @@ django_asgi_app = get_asgi_application()
 
 from pickups.ws_routing import websocket_urlpatterns as pickup_ws
 from chat.routing import websocket_urlpatterns as chat_ws
-from services.routing import websocket_urlpatterns as service_ws
 
 from pickups.jwt_auth import JWTAuthMiddleware
 
-all_ws = pickup_ws + service_ws + chat_ws
+all_ws = pickup_ws + chat_ws
 
 application = ProtocolTypeRouter({
     'http': django_asgi_app,
