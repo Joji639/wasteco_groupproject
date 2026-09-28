@@ -552,7 +552,7 @@ class PickupTrackingStartView(APIView):
         tracking = PickupTracking.objects.create(
             pickup_request=pickup,
             operator=request.user,
-            start_place=serializer.validated_data.get('start_place', ''),
+            start_place=serializer.validated_data['start_location'],
             start_latitude=start_lat,
             start_longitude=start_lng,
             current_latitude=start_lat,

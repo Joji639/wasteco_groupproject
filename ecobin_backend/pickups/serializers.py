@@ -392,9 +392,7 @@ class WasteCollectionReportSerializer(serializers.Serializer):
 
 class PickupTrackingStartSerializer(serializers.Serializer):
     pickup_request_id = serializers.UUIDField()
-    start_place = serializers.CharField(max_length=500, required=False, allow_blank=True, default='')
-    start_latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
-    start_longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
+    start_location = serializers.CharField(max_length=500)
 
     def validate_pickup_request_id(self, value):
         try:
@@ -406,21 +404,11 @@ class PickupTrackingStartSerializer(serializers.Serializer):
         return value
 
     def validate(self, data):
-        place = data.get('start_place')
-        lat = data.get('start_latitude')
-        lng = data.get('start_longitude')
-
-        if not place and (lat is None or lng is None):
-            raise serializers.ValidationError("Either start_place or both start_latitude and start_longitude are required.")
-
-        if place and (lat is None or lng is None):
-            from pickups.geocoding import geocode_place
-            coords = geocode_place(place)
-            if coords is None:
-                raise serializers.ValidationError({"start_place": "Could not find coordinates for this place."})
-            data['start_latitude'] = coords[0]
-            data['start_longitude'] = coords[1]
-
+        coords = geocode_place(data.get('start_location', ''))
+        if coords is None:
+            raise serializers.ValidationError({"start_location": "Could not find coordinates for this place."})
+        data['start_latitude'] = coords[0]
+        data['start_longitude'] = coords[1]
         return data
 
 

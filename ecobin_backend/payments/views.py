@@ -76,44 +76,6 @@ class OperatorAssignedPickupsView(APIView):
         )
 
 
-class OperatorStartTaskView(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsOperatorRole]
-
-    @extend_schema(tags=['Operators'], responses={200: None})
-    def patch(self, request, pickup_id):
-        try:
-            with transaction.atomic():
-                pickup = PickupRequest.objects.select_for_update().get(
-                    id=pickup_id,
-                    assigned_operator=request.user,
-                )
-
-                if pickup.status != 'ASSIGNED':
-                    return Response(
-                        {"success": False, "message": f"Cannot start task for pickup with status '{pickup.status}'. Only ASSIGNED pickups can be started."},
-                        status=status.HTTP_409_CONFLICT,
-                    )
-
-                pickup.status = 'ON_THE_WAY'
-                pickup.save(update_fields=['status', 'updated_at'])
-        except PickupRequest.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Pickup not found or not assigned to you."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        except Exception as e:
-            logger.error("Failed to start task for pickup %s: %s", pickup_id, e)
-            return Response(
-                {"success": False, "message": "Internal server error while starting task."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-        return Response(
-            {"success": True, "message": "Task started. Status updated to ON_THE_WAY."},
-            status=status.HTTP_200_OK,
-        )
-
-
 class OperatorRecordCollectionView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsOperatorRole]
 

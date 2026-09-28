@@ -90,41 +90,6 @@ class OperatorAssignedPickupsViewTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
 
-class OperatorStartTaskViewTests(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.operator = _create_operator(email='op2@test.com')
-        self.user = _create_user(email='user2@test.com')
-        self.pickup = _create_pickup(self.user, status='ASSIGNED', assigned_operator=self.operator)
-
-    def test_start_task_success(self):
-        _auth(self.client, self.operator)
-        resp = self.client.patch(f'{API}operator/pickups/{self.pickup.id}/start/')
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertTrue(resp.data['success'])
-        self.pickup.refresh_from_db()
-        self.assertEqual(self.pickup.status, 'ON_THE_WAY')
-
-    def test_start_task_wrong_status(self):
-        self.pickup.status = 'COLLECTED'
-        self.pickup.save()
-        _auth(self.client, self.operator)
-        resp = self.client.patch(f'{API}operator/pickups/{self.pickup.id}/start/')
-        self.assertEqual(resp.status_code, status.HTTP_409_CONFLICT)
-
-    def test_start_task_not_assigned(self):
-        other_operator = _create_operator(email='op3@test.com')
-        _auth(self.client, other_operator)
-        resp = self.client.patch(f'{API}operator/pickups/{self.pickup.id}/start/')
-        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_start_task_not_found(self):
-        _auth(self.client, self.operator)
-        fake_id = uuid.uuid4()
-        resp = self.client.patch(f'{API}operator/pickups/{fake_id}/start/')
-        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
-
-
 class OperatorRecordCollectionViewTests(TestCase):
     tags = ['ci_skip']
     

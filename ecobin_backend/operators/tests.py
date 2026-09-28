@@ -1,11 +1,15 @@
 """Tests for operators app — Operator onboarding and profile APIs."""
 
+from decimal import Decimal
+from unittest.mock import patch
+
 from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework import status
 
 from accounts.models import CustomUser, UserProfile, OperatorProfile, OperatorAdminProfile, OperatorOnboarding
 from accounts.serializers import get_tokens_for_user
+from pickups.models import PickupRequest
 
 API = "/operators/"
 
@@ -324,3 +328,111 @@ class OperatorLogoutTests(TestCase):
         tokens = _tokens(self.operator)
         r = self.client.post(self.url, {"refresh": tokens["refresh"]}, format="json")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
+
+
+# ---------------------------------------------------------------------------
+# 8. TRACKING START
+# ---------------------------------------------------------------------------
+
+def _create_pickup(user, status='ASSIGNED', assigned_operator=None, **kw):
+    return PickupRequest.objects.create(
+        user=user,
+        pickup_type='ON_DEMAND',
+        latitude=Decimal('8.5241'),
+        longitude=Decimal('76.9366'),
+        description='Test waste pickup',
+        status=status,
+        assigned_operator=assigned_operator,
+        **kw,
+    )
+
+
+class PickupTrackingStartTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = API + "tracking/start/"
+        self.operator = _create_operator(email="trackop@test.com", password="Op1234!")
+        self.user = _create_user(email="trackuser@test.com")
+        self.pickup = _create_pickup(self.user, status='ASSIGNED', assigned_operator=self.operator)
+        _auth(self.client, self.operator)
+
+    @patch("operators.views.start_simulation")
+    @patch("operators.views.calculate_route")
+    @patch("pickups.serializers.geocode_place")
+    def test_tracking_start_success(self, mock_geocode, mock_route, mock_sim):
+        mock_geocode.return_value = (9.9312, 76.2673)
+        mock_route.return_value = ([[9.9312, 76.2673], [8.5241, 76.9366]], 600)
+        mock_sim.return_value = None
+
+        r = self.client.post(self.url, {
+            "pickup_request_id": str(self.pickup.id),
+            "start_location": "MG Road, Kochi",
+        }, format="json")
+
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(r.data["success"])
+        mock_geocode.assert_called_once_with("MG Road, Kochi")
+        self.assertEqual(Decimal(str(r.data["data"]["start_latitude"])), Decimal("9.9312"))
+        self.assertEqual(Decimal(str(r.data["data"]["start_longitude"])), Decimal("76.2673"))
+        self.assertEqual(r.data["data"]["start_place"], "MG Road, Kochi")
+        self.pickup.refresh_from_db()
+        self.assertEqual(self.pickup.status, "ON_THE_WAY")
+
+    @patch("pickups.serializers.geocode_place")
+    def test_tracking_start_geocode_fails(self, mock_geocode):
+        mock_geocode.return_value = None
+        r = self.client.post(self.url, {
+            "pickup_request_id": str(self.pickup.id),
+            "start_location": "Nowhere Land",
+        }, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("start_location", str(r.data))
+
+    @patch("pickups.serializers.geocode_place")
+    def test_tracking_start_blank_location(self, mock_geocode):
+        r = self.client.post(self.url, {
+            "pickup_request_id": str(self.pickup.id),
+            "start_location": "",
+        }, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_geocode.assert_not_called()
+
+    @patch("pickups.serializers.geocode_place")
+    def test_tracking_start_missing_location(self, mock_geocode):
+        r = self.client.post(self.url, {
+            "pickup_request_id": str(self.pickup.id),
+        }, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_geocode.assert_not_called()
+
+    @patch("pickups.serializers.geocode_place")
+    def test_tracking_start_not_assigned(self, mock_geocode):
+        mock_geocode.return_value = (9.9312, 76.2673)
+        other_op = _create_operator(email="trackop2@test.com", password="Op1234!")
+        _auth(self.client, other_op)
+        r = self.client.post(self.url, {
+            "pickup_request_id": str(self.pickup.id),
+            "start_location": "MG Road, Kochi",
+        }, format="json")
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch("pickups.serializers.geocode_place")
+    def test_tracking_start_pickup_not_found(self, mock_geocode):
+        import uuid as _uuid
+        r = self.client.post(self.url, {
+            "pickup_request_id": str(_uuid.uuid4()),
+            "start_location": "MG Road, Kochi",
+        }, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("operators.views.start_simulation")
+    @patch("operators.views.calculate_route")
+    @patch("pickups.serializers.geocode_place")
+    def test_tracking_start_wrong_status(self, mock_geocode, mock_route, mock_sim):
+        self.pickup.status = 'COLLECTED'
+        self.pickup.save()
+        r = self.client.post(self.url, {
+            "pickup_request_id": str(self.pickup.id),
+            "start_location": "MG Road, Kochi",
+        }, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)

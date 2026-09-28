@@ -1,7 +1,6 @@
 from django.urls import path
 from .views import (
     OperatorAssignedPickupsView,
-    OperatorStartTaskView,
     OperatorRecordCollectionView,
     OperatorCollectionView,
     OperatorCollectionDetailView,
@@ -13,7 +12,6 @@ from .views import (
 
 urlpatterns = [
     path('operator/assigned-pickups/', OperatorAssignedPickupsView.as_view(), name='operator-assigned-pickups'),
-    path('operator/pickups/<uuid:pickup_id>/start/', OperatorStartTaskView.as_view(), name='operator-start-task'),
     path('operator/collections/', OperatorCollectionView.as_view(), name='operator-collection-list'),
     path('operator/collections/create/', OperatorRecordCollectionView.as_view(), name='operator-create-collection'),
     path('operator/collections/<uuid:collection_id>/', OperatorCollectionDetailView.as_view(), name='operator-collection-detail'),
