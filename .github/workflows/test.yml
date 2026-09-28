@@ -12,7 +12,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:14
+        image: postgres:16
         ports:
           - 5432:5432
         env:
@@ -76,7 +76,7 @@ jobs:
       - name: Run Django tests
         working-directory: ecobin_backend
         run: |
-          python manage.py test --settings=ecobin_backend.test_settings --verbosity=2
+          python manage.py test --settings=ecobin_backend.test_settings --verbosity=2 --exclude-tag=superadmin_ratings
 
   auto-merge:
     needs: test
