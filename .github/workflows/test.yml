@@ -46,6 +46,9 @@ jobs:
       REDIS_URL: redis://localhost:6379/0
       GOOGLE_CLIENT_ID: test-client-id
       GOOGLE_CLIENT_SECRET: test-client-secret
+      RAZORPAY_KEY_ID: test-key-id
+      RAZORPAY_KEY_SECRET: test-key-secret
+      GROQ_API_KEY: ""
 
     steps:
       - name: Checkout code
