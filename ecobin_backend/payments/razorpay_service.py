@@ -32,7 +32,7 @@ def create_razorpay_order(amount_paise, currency='INR', receipt=None, notes=None
 
 def fetch_order(order_id):
     client = get_razorpay_client()
-    return client.orders.fetch(order_id)
+    return client.order.fetch(order_id)
 
 
 def fetch_order_payments(order_id):

@@ -755,6 +755,7 @@ _CHECKOUT_PAGE_HTML = """<!doctype html>
   }
 
   function poll() {
+    if (statusEl.className === 'err') return;
     fetch('/payments/order/' + ORDER + '/status/')
       .then(function (r) { return r.json(); })
       .then(function (j) {

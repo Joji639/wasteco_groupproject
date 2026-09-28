@@ -649,3 +649,40 @@ class WebhookFreePaymentSyncTests(TestCase):
         self.assertIn('/payments/checkout/order_qr_test123/', resp.data['data']['checkout_page_url'])
         self.assertTrue(resp.data['data']['qr_image'].startswith('data:image/png;base64,'))
         self.assertEqual(resp.data['data']['order_id'], 'order_qr_test123')
+
+
+class RazorpayServiceResourceNameTests(TestCase):
+    """Regression: SDK resources are singular (client.order, client.payment).
+
+    Using plural (client.orders) raises AttributeError in production sync,
+    which keeps an already-paid order stuck at CREATED status.
+    """
+
+    @staticmethod
+    def _specced_client():
+        import razorpay
+        return MagicMock(spec=razorpay.Client(auth=('k', 's')))
+
+    @patch('payments.razorpay_service.get_razorpay_client')
+    def test_fetch_order_uses_singular_order_resource(self, mock_get):
+        from .razorpay_service import fetch_order
+        client = self._specced_client()
+        mock_get.return_value = client
+        fetch_order('order_x1')
+        client.order.fetch.assert_called_once_with('order_x1')
+
+    @patch('payments.razorpay_service.get_razorpay_client')
+    def test_fetch_order_payments_uses_singular_payment_resource(self, mock_get):
+        from .razorpay_service import fetch_order_payments
+        client = self._specced_client()
+        mock_get.return_value = client
+        fetch_order_payments('order_x1')
+        client.payment.fetch_all.assert_called_once_with({'order_id': 'order_x1'})
+
+    @patch('payments.razorpay_service.get_razorpay_client')
+    def test_capture_payment_uses_singular_payment_resource(self, mock_get):
+        from .razorpay_service import capture_payment
+        client = self._specced_client()
+        mock_get.return_value = client
+        capture_payment('pay_x1', 8100)
+        client.payment.capture.assert_called_once_with('pay_x1', 8100)
