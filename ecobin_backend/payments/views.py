@@ -99,9 +99,16 @@ class OperatorStartTaskView(APIView):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        with transaction.atomic():
-            pickup.status = 'ON_THE_WAY'
-            pickup.save(update_fields=['status', 'updated_at'])
+        try:
+            with transaction.atomic():
+                pickup.status = 'ON_THE_WAY'
+                pickup.save(update_fields=['status', 'updated_at'])
+        except Exception as e:
+            logger.error("Failed to start task for pickup %s: %s", pickup_id, e)
+            return Response(
+                {"success": False, "message": "Internal server error while starting task."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return Response(
             {"success": True, "message": "Task started. Status updated to ON_THE_WAY."},
