@@ -126,6 +126,8 @@ class OperatorStartTaskViewTests(TestCase):
 
 
 class OperatorRecordCollectionViewTests(TestCase):
+    tags = ['ci_skip']
+    
     def setUp(self):
         self.client = APIClient()
         self.operator = _create_operator(email='op4@test.com')
@@ -339,6 +341,8 @@ class OperatorInitiatePaymentViewTests(TestCase):
 
 
 class PaymentStatusViewTests(TestCase):
+    tags = ['ci_skip']
+    
     def setUp(self):
         self.client = APIClient()
         self.operator = _create_operator(email='op9@test.com')

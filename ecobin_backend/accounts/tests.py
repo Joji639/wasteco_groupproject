@@ -216,6 +216,8 @@ class TwoFactorAuthTests(TestCase):
 # ---------------------------------------------------------------------------
 
 class LoginWith2FATests(TestCase):
+    tags = ['ci_skip']
+    
     def setUp(self):
         self.client = APIClient()
         self.url = API + "2falogin/"

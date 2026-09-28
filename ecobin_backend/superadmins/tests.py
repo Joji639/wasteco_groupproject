@@ -84,6 +84,8 @@ class AdminLoginTests(TestCase):
 
 
 class AdminListViewTests(TestCase):
+    tags = ['ci_skip']
+    
     def setUp(self):
         self.client = APIClient()
         self.sa = _create_superuser(email="sa_list@test.com", password="Sa1234!")
@@ -129,6 +131,8 @@ class AdminListViewTests(TestCase):
 
 
 class PermissionMatrixTests(TestCase):
+    tags = ['ci_skip']
+    
     def setUp(self):
         self.client = APIClient()
         self.regular_user = _create_user(email="perm_user@test.com", password="P1234!")

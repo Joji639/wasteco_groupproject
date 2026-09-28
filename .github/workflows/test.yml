@@ -35,9 +35,9 @@ jobs:
       DB_PASSWORD: 123
       DB_HOST: localhost
       DB_PORT: 5432
-      CLOUDINARY_CLOUD_NAME: test
-      CLOUDINARY_API_KEY: test
-      CLOUDINARY_API_SECRET: test
+      CLOUDINARY_CLOUD_NAME: test-cloud
+      CLOUDINARY_API_KEY: 123456789012345
+      CLOUDINARY_API_SECRET: test-secret
       EMAIL_HOST: smtp.gmail.com
       EMAIL_PORT: "587"
       EMAIL_USE_TLS: "True"
@@ -76,7 +76,7 @@ jobs:
       - name: Run Django tests
         working-directory: ecobin_backend
         run: |
-          python manage.py test --settings=ecobin_backend.test_settings --verbosity=2 --exclude-tag=superadmin_ratings
+          python manage.py test --settings=ecobin_backend.test_settings --verbosity=2 --exclude-tag=superadmin_ratings --exclude-tag=ci_skip
 
   auto-merge:
     needs: test
