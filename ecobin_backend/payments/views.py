@@ -78,7 +78,6 @@ class OperatorAssignedPickupsView(APIView):
 
 class OperatorStartTaskView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsOperatorRole]
-    serializer_class = WasteCollectionSerializer
 
     @extend_schema(tags=['Operators'], responses={200: None})
     def patch(self, request, pickup_id):
