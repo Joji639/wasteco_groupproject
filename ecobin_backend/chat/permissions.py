@@ -1,27 +1,26 @@
 from rest_framework import permissions
-from accounts.permissions import _in_group
 from .models import CommunityMember
 
 
 class IsOperatorOrAdmin(permissions.BasePermission):
-    """Allow only Operator or OperatorAdmin roles."""
+    """Allow users whose group holds `chat.can_view_communities`."""
 
     def has_permission(self, request, view):
         return bool(
             request.user
             and request.user.is_authenticated
-            and _in_group(request.user, 'Operator', 'OperatorAdmin')
+            and request.user.has_perm('chat.can_view_communities')
         )
 
 
 class IsOperatorAdminRole(permissions.BasePermission):
-    """Allow only OperatorAdmin role."""
+    """Allow users whose group holds `chat.can_manage_community`."""
 
     def has_permission(self, request, view):
         return bool(
             request.user
             and request.user.is_authenticated
-            and _in_group(request.user, 'OperatorAdmin')
+            and request.user.has_perm('chat.can_manage_community')
         )
 
 

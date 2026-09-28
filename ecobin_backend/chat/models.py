@@ -16,6 +16,12 @@ class Community(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        permissions = (
+            ('can_view_communities', 'Can list/view communities'),
+            ('can_create_community', 'Can create a community'),
+            ('can_manage_community', 'Can update/deactivate a community'),
+            ('can_manage_members', 'Can add/remove members and change permissions'),
+        )
 
     def __str__(self):
         return self.name

@@ -1,6 +1,7 @@
 """Tests for Group Chat API."""
 
 from django.test import TestCase, TransactionTestCase
+from django.contrib.auth.models import Group, Permission
 from channels.testing import WebsocketCommunicator
 from channels.db import database_sync_to_async
 from rest_framework.test import APIClient
@@ -736,3 +737,75 @@ class WebSocketTests(TransactionTestCase):
             sender_id=sender_id,
             content=content,
         ).exists()
+
+
+# ===========================================================================
+# GROUP/PERMISSION MAPPING TESTS (chat.permissions backed by Django groups)
+# ===========================================================================
+
+ALL_CHAT_PERMS = {
+    'can_view_communities',
+    'can_create_community',
+    'can_manage_community',
+    'can_manage_members',
+}
+
+
+class GroupPermissionMappingTests(TestCase):
+    def _chat_perms(self, group_name):
+        return set(
+            Group.objects.get(name=group_name)
+            .permissions.filter(content_type__app_label='chat')
+            .values_list('codename', flat=True)
+        )
+
+    def test_permission_objects_exist(self):
+        self.assertEqual(
+            set(
+                Permission.objects.filter(
+                    content_type__app_label='chat',
+                    codename__in=ALL_CHAT_PERMS,
+                ).values_list('codename', flat=True)
+            ),
+            ALL_CHAT_PERMS,
+        )
+
+    def test_operator_group_has_view_permission_only(self):
+        self.assertEqual(self._chat_perms('Operator'), {'can_view_communities'})
+
+    def test_operator_admin_group_has_all_permissions(self):
+        self.assertEqual(self._chat_perms('OperatorAdmin'), ALL_CHAT_PERMS)
+
+    def test_superadmin_group_has_all_permissions(self):
+        self.assertEqual(self._chat_perms('SuperAdmin'), ALL_CHAT_PERMS)
+
+    def test_user_group_has_no_chat_permissions(self):
+        group, _ = Group.objects.get_or_create(name='User')
+        self.assertEqual(
+            set(group.permissions.filter(
+                content_type__app_label='chat'
+            ).values_list('codename', flat=True)),
+            set(),
+        )
+
+    def test_operator_can_list_but_not_create(self):
+        client = APIClient()
+        _auth(client, _create_operator(email='op_perm@test.com'))
+        self.assertEqual(
+            client.get(f'{API}communities/').status_code,
+            status.HTTP_200_OK,
+        )
+        resp = client.post(
+            f'{API}operator-admin/communities/', {'name': 'X'}, format='json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_superadmin_can_create_community(self):
+        client = APIClient()
+        _auth(client, _create_superadmin(email='sa_perm@test.com'))
+        resp = client.post(
+            f'{API}operator-admin/communities/',
+            {'name': 'Superadmin Community'},
+            format='json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
